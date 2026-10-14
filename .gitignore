@@ -4,3 +4,4 @@ __pycache__/
 data/*.npy
 *.keras
 *.h5
+static/uploads/*
