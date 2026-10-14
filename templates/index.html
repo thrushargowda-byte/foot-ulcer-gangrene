@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediScan AI | Diabetic Foot Ulcer & Gangrene Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #0B5FA8;
+    --primary-dark: #084577;
+    --primary-light: #E8F2FB;
+    --accent-green: #1B9E6F;
+    --accent-green-light: #E7F7F0;
+    --text-dark: #142433;
+    --text-muted: #5C7080;
+    --border: #E3EAF0;
+    --bg-soft: #F5F9FC;
+    --radius: 14px;
+    --shadow: 0 4px 20px rgba(11, 95, 168, 0.08);
+    --shadow-lg: 0 12px 40px rgba(11, 95, 168, 0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-soft);
+    color: var(--text-dark);
+    line-height: 1.6;
+  }
+
+  /* ===== NAVBAR ===== */
+  .navbar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 19px;
+    color: var(--primary-dark);
+  }
+  .navbar .brand .logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-green));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px;
+  }
+  .navbar .tagline {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    display: none;
+  }
+  @media (min-width: 640px) { .navbar .tagline { display: block; } }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 55%, #1284A8 100%);
+    padding: 56px 20px 80px;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    bottom: -100px; left: -60px;
+    width: 260px; height: 260px;
+    background: rgba(27, 158, 111, 0.15);
+    border-radius: 50%;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    position: relative; z-index: 1;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 800;
+    max-width: 720px;
+    margin: 0 auto 14px;
+    position: relative; z-index: 1;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    max-width: 560px;
+    margin: 0 auto;
+    font-size: 15.5px;
+    color: rgba(255,255,255,0.88);
+    position: relative; z-index: 1;
+  }
+
+  /* ===== MAIN CONTAINER ===== */
+  .main-wrap {
+    max-width: 880px;
+    margin: -48px auto 60px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* ===== UPLOAD CARD ===== */
+  .upload-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    padding: 36px;
+    border: 1px solid var(--border);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card-header .icon-badge {
+    width: 42px; height: 42px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .card-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .card-header span {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .error-banner {
+    background: #FDEDEC;
+    border: 1px solid #F5C6C0;
+    color: #A22C22;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13.5px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+
+  .upload-box {
+    border: 2px dashed #B9D3E8;
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--primary-light);
+    transition: all 0.2s;
+    margin-bottom: 18px;
+  }
+  .upload-box:hover, .upload-box.dragover {
+    border-color: var(--primary);
+    background: #DDEBF9;
+  }
+  .upload-box input[type="file"] { display: none; }
+  .upload-icon {
+    width: 52px; height: 52px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 24px;
+    color: var(--primary);
+    box-shadow: 0 4px 10px rgba(11,95,168,0.12);
+  }
+  .upload-label {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 15px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .upload-sub { font-size: 12.5px; color: var(--text-muted); }
+  #file-name { margin-top: 12px; font-size: 13px; color: var(--text-dark); font-weight: 600; }
+  .preview-img {
+    max-width: 100%; max-height: 220px;
+    border-radius: 10px; margin-top: 14px;
+    display: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  }
+
+  .btn-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .btn-secondary {
+    flex: 1;
+    background: #fff;
+    color: var(--primary-dark);
+    border: 1.5px solid var(--border);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--primary); background: var(--primary-light); }
+
+  .submit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    border: none;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(11,95,168,0.25);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(11,95,168,0.32); }
+
+  /* ===== INFO SECTION ===== */
+  .info-section {
+    max-width: 880px;
+    margin: 0 auto 60px;
+    padding: 0 20px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 720px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .info-card .ic {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  .ic-blue { background: var(--primary-light); color: var(--primary); }
+  .ic-green { background: var(--accent-green-light); color: var(--accent-green); }
+  .ic-amber { background: #FEF3E2; color: #B26A00; }
+  .info-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .info-card p { font-size: 13px; color: var(--text-muted); }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 28px 20px;
+    text-align: center;
+  }
+  .footer p {
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  .footer .disclaimer-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-soft);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* ===== CAMERA MODAL ===== */
+  #camera-modal {
+    display: none; position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%; background: rgba(10,25,40,0.75);
+    align-items: center; justify-content: center; z-index: 999;
+  }
+  #camera-modal .modal-content {
+    background: #fff; border-radius: 16px; padding: 24px;
+    max-width: 90%; text-align: center;
+  }
+  #camera-video, #camera-canvas {
+    width: 100%; max-width: 400px; border-radius: 12px; background: #000;
+  }
+  #camera-canvas { display: none; }
+  .camera-controls { margin-top: 16px; display: flex; gap: 10px; justify-content: center; }
+  .camera-controls button {
+    padding: 11px 22px; border-radius: 10px; border: none;
+    font-weight: 700; cursor: pointer; font-size: 14px;
+  }
+  .btn-capture { background: var(--primary); color: #fff; }
+  .btn-close { background: var(--bg-soft); color: var(--text-dark); }
+</style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="brand">
+      <div class="logo-icon">🩺</div>
+      MediScan AI
+    </div>
+    <div class="tagline">Diabetic Foot Ulcer &amp; Gangrene Detection System</div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">🔬 AI-Powered Clinical Screening Tool</div>
+    <h1>Early Detection Support for Diabetic Foot Complications</h1>
+    <p>Upload a foot image and receive an instant AI-assisted screening for foot ulcers and gangrene, backed by deep learning trained on clinical imaging data.</p>
+  </section>
+
+  <div class="main-wrap">
+    <div class="upload-card">
+      <div class="card-header">
+        <div class="icon-badge">📤</div>
+        <div>
+          <h2>Upload Foot Image</h2>
+          <span>Supported formats: PNG, JPG, JPEG</span>
+        </div>
+      </div>
+
+      {% if error %}
+      <div class="error-banner">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form id="upload-form" action="/predict" method="post" enctype="multipart/form-data">
+        <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">📷</div>
+          <input type="file" id="file-input" name="file" accept=".png,.jpg,.jpeg" onchange="showFileName(this.files)">
+          <span class="upload-label">Click to upload or drag & drop</span>
+          <span class="upload-sub">A clear, well-lit photo of the foot gives the most accurate result</span>
+          <div id="file-name"></div>
+          <img id="preview" class="preview-img">
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn-secondary" onclick="openCamera()">📸 Use Camera</button>
+        </div>
+
+        <button type="submit" class="submit-btn">Analyze Image</button>
+      </form>
+    </div>
+  </div>
+
+  <section class="info-section">
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="ic ic-blue">🧠</div>
+        <h3>Deep Learning Analysis</h3>
+        <p>Powered by a Squeeze-and-Excitation ResNet50 model trained on diabetic foot ulcer and gangrene imaging datasets.</p>
+      </div>
+      <div class="info-card">
+        <div class="ic ic-green">⚡</div>
+        <h3>Instant Results</h3>
+        <p>Get a classification (Normal, Foot Ulcer, or Gangrene) with confidence scores in seconds.</p>
+      </div>
+      <div class="info-card">
+        <div class="ic ic-amber">📋</div>
+        <h3>Care Guidance</h3>
+        <p>Every result includes tailored next-step recommendations and a downloadable PDF report.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="disclaimer-badge">⚕️ Academic Demonstration Tool</div>
+    <p>MediScan AI is a project developed for academic purposes and is <strong>not a certified medical device</strong>.
+    It does not replace professional diagnosis or treatment. Always consult a qualified healthcare provider
+    for any foot wound, ulcer, or suspected infection.</p>
+  </footer>
+
+  <div id="camera-modal">
+    <div class="modal-content">
+      <video id="camera-video" autoplay playsinline></video>
+      <canvas id="camera-canvas"></canvas>
+      <div class="camera-controls">
+        <button class="btn-capture" id="capture-btn" onclick="capturePhoto()">Capture</button>
+        <button class="btn-close" onclick="closeCamera()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const preview = document.getElementById('preview');
+  const fileNameDiv = document.getElementById('file-name');
+
+  function showFileName(files) {
+    if (files && files[0]) {
+      fileNameDiv.textContent = "Selected: " + files[0].name;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(files[0]);
+    }
+  }
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.classList.remove('dragover');
+    });
+  });
+  dropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      fileInput.files = files;
+      showFileName(files);
+    }
+  });
+
+  let stream = null;
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+
+  async function openCamera() {
+    document.getElementById('camera-modal').style.display = 'flex';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = stream;
+    } catch (err) {
+      alert("Could not access camera: " + err.message);
+      closeCamera();
+    }
+  }
+
+  function closeCamera() {
+    document.getElementById('camera-modal').style.display = 'none';
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+  }
+
+  function capturePhoto() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      showFileName(fileInput.files);
+      closeCamera();
+    }, "image/jpeg", 0.92);
+  }
+</script>
+</body>
+</html>
