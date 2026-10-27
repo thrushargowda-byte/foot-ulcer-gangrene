@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set public_page = true %}{% set auth_page = true %}
+{% block title %}Log in | FootGuard AI{% endblock %}
+{% block public %}
+<div class="auth-wrap">
+  <div class="auth-side">
+    <a class="brand" href="{{ url_for('home') }}">{% include '_logo.html' %}<span>FootGuard AI</span></a>
+    <div><h2>Welcome back</h2><p>Log in to see your records, new scans and doctor feedback.</p>
+      <ul><li>Private, per-user record storage</li><li>Instant AI foot screening</li><li>Doctor review and PDF reports</li></ul></div>
+    <small>Academic project. Not a certified medical device.</small>
+  </div>
+  <div class="auth-main"><div class="auth-box">
+    <h1>Log in</h1><p class="sub">Enter your email and password.</p>
+    {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
+    <form method="post">
+      <div class="fg"><label>Email</label><input type="email" name="email" required autocomplete="email" autofocus></div>
+      <div class="fg"><label>Password</label><input type="password" name="password" required autocomplete="current-password"></div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Log in</button>
+    </form>
+    <p class="muted mt">New here? <a href="{{ url_for('register') }}"><b>Create an account</b></a></p>
+  </div></div>
+</div>
+{% endblock %}

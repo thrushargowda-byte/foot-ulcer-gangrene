@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set public_page = true %}
+{% block title %}FootGuard AI | Diabetic Foot Ulcer & Gangrene Detection{% endblock %}
+{% block public %}
+{% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}" style="margin:12px 5vw 0">{{ m }}</div>{% endfor %}{% endwith %}
+<section class="hero"><div class="hero-grid">
+  <div>
+    <span class="eyebrow">AI-powered clinical screening</span>
+    <h1>Early detection support for diabetic foot complications</h1>
+    <p class="lead">Upload a foot photo and get an instant AI screening for foot ulcers and gangrene. Keep your records private and share them with a doctor for review.</p>
+    <div class="cta">
+      <a class="btn btn-light btn-lg" href="{{ url_for('register') }}">Create account</a>
+      <a class="btn btn-ghost btn-lg" href="{{ url_for('login') }}">Log in</a>
+    </div>
+    <div class="numbers"><div><b>96%</b><span>Test accuracy</span></div><div><b>1,346</b><span>Training images</span></div><div><b>3</b><span>Conditions classified</span></div></div>
+  </div>
+  <div class="hero-card">
+    <h3>What the AI looks for</h3>
+    <div class="class-row"><span class="dot g"></span><div><b>Normal</b><small>Healthy skin, preventive care tips</small></div></div>
+    <div class="class-row"><span class="dot a"></span><div><b>Foot Ulcer (DFU)</b><small>See a doctor promptly</small></div></div>
+    <div class="class-row"><span class="dot r"></span><div><b>Gangrene</b><small>Urgent medical attention</small></div></div>
+  </div>
+</div></section>
+
+<section class="section">
+  <h2>Everything in one place</h2><p class="sub">Screening, secure storage and doctor feedback, built for diabetic foot care.</p>
+  <div class="grid3">
+    <div class="card feature"><div class="fi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8"/></svg></div><h3>AI-powered screening</h3><p>An SE-ResNet50 deep learning model classifies each image with confidence scores and care guidance.</p></div>
+    <div class="card feature"><div class="fi"><svg class="ico" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h3>Private records</h3><p>Every scan and PDF report is stored under your account. Only you and the doctor you choose can open it.</p></div>
+    <div class="card feature"><div class="fi"><svg class="ico" viewBox="0 0 24 24"><path d="M9 4h6v3H9zM7 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1M9 14l2 2 4-4"/></svg></div><h3>Doctor review</h3><p>Doctors confirm or correct the AI result and add notes. Your report is updated with their feedback.</p></div>
+  </div>
+</section>
+
+<div class="band"><section class="section">
+  <h2>How it works</h2><p class="sub">Four simple steps from photo to professional feedback.</p>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3>Register</h3><p>Sign up as a patient or as a doctor.</p></div>
+    <div class="step"><div class="n">2</div><h3>Scan</h3><p>Upload or capture a clear foot photo.</p></div>
+    <div class="step"><div class="n">3</div><h3>Share</h3><p>Send the case to a doctor of your choice.</p></div>
+    <div class="step"><div class="n">4</div><h3>Review &amp; report</h3><p>Receive the doctor's note and a PDF report.</p></div>
+  </div>
+</section></div>
+
+<section class="section"><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+  <div class="card role-card"><h2>For patients</h2><ul><li>Instant AI result with confidence</li><li>First-aid and care recommendations</li><li>Personal record history and PDF reports</li><li>Choose which doctor sees your case</li></ul><a class="btn btn-primary" href="{{ url_for('register') }}">Register as patient</a></div>
+  <div class="card role-card"><h2>For doctors</h2><ul><li>See only the cases shared with you</li><li>View the image, AI scores and patient notes</li><li>Record your diagnosis and advice</li><li>Reports update automatically</li></ul><a class="btn btn-outline" href="{{ url_for('register') }}">Register as doctor</a></div>
+</div></section>
+
+<footer class="pfooter">FootGuard AI is an academic project and not a certified medical device. It does not replace professional diagnosis. Always consult a qualified healthcare provider.</footer>
+{% endblock %}

@@ -5,3 +5,7 @@ data/*.npy
 *.keras
 *.h5
 static/uploads/*
+
+storage/
+instance/
+app_old.py

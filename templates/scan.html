@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}New Scan | FootGuard AI{% endblock %}
+{% block heading %}New scan{% endblock %}
+{% block subheading %}<p>Upload or capture a clear, well-lit photo of the foot.</p>{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="case-layout" id="scanForm">
+  <div class="card">
+    <h2>1. Foot image</h2>
+    <div class="dropzone" id="dz">
+      <input type="file" id="file" name="file" accept=".png,.jpg,.jpeg" required>
+      <p><b>Click to upload or drag &amp; drop</b></p>
+      <p class="muted">PNG, JPG or JPEG, up to 10 MB</p>
+      <img id="preview" class="preview" alt="Preview">
+    </div>
+    <button type="button" class="btn btn-outline mt" id="camBtn">Use camera</button>
+  </div>
+  <div class="card">
+    <h2>2. Details</h2>
+    <div class="fg"><label>Share with a doctor (optional)</label>
+      <select name="doctor_id"><option value="">Keep private for now</option>
+        {% for d in doctors %}<option value="{{ d.id }}">Dr. {{ d.name }}{% if d.specialization %} ({{ d.specialization }}){% endif %}</option>{% endfor %}
+      </select>
+      <small>Only the doctor you choose can see this case. You can also share it later.</small></div>
+    <div class="fg"><label>Note for the doctor (optional)</label>
+      <textarea name="note" rows="4" maxlength="500" placeholder="e.g. Wound present for 2 weeks, I have diabetes"></textarea></div>
+    <button class="btn btn-primary btn-block btn-lg" type="submit" id="goBtn">Analyze image</button>
+    <div class="note">Academic tool, not a certified medical device. It does not replace professional diagnosis.</div>
+  </div>
+</form>
+
+<div id="cam" style="display:none;position:fixed;inset:0;background:rgba(10,25,40,.75);align-items:center;justify-content:center;z-index:50">
+  <div class="card" style="max-width:460px;text-align:center">
+    <video id="video" autoplay playsinline style="width:100%;border-radius:10px;background:#000"></video>
+    <canvas id="canvas" style="display:none"></canvas>
+    <div class="row mt" style="justify-content:center"><button class="btn btn-primary" type="button" id="snap">Capture</button><button class="btn btn-outline" type="button" id="close">Cancel</button></div>
+  </div>
+</div>
+<script>
+const dz = document.getElementById('dz'), file = document.getElementById('file'), prev = document.getElementById('preview');
+function show() { if (file.files[0]) { const r = new FileReader(); r.onload = e => { prev.src = e.target.result; prev.style.display = 'block'; }; r.readAsDataURL(file.files[0]); } }
+dz.addEventListener('click', e => { if (e.target !== file) file.click(); });
+file.addEventListener('change', show);
+['dragenter', 'dragover'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove('over'); }));
+dz.addEventListener('drop', e => { if (e.dataTransfer.files.length) { file.files = e.dataTransfer.files; show(); } });
+document.getElementById('scanForm').addEventListener('submit', () => { document.getElementById('goBtn').textContent = 'Analyzing... please wait'; });
+let stream = null; const cam = document.getElementById('cam'), video = document.getElementById('video'), canvas = document.getElementById('canvas');
+function stop() { cam.style.display = 'none'; if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+document.getElementById('camBtn').onclick = async () => {
+  cam.style.display = 'flex';
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); video.srcObject = stream; }
+  catch (err) { alert('Could not access camera: ' + err.message); stop(); }
+};
+document.getElementById('close').onclick = stop;
+document.getElementById('snap').onclick = () => {
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(b => { const dt = new DataTransfer(); dt.items.add(new File([b], 'camera.jpg', { type: 'image/jpeg' })); file.files = dt.files; show(); stop(); }, 'image/jpeg', .92);
+};
+</script>
+{% endblock %}

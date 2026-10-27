@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Case #{{ case.id }} | FootGuard AI{% endblock %}
+{% block heading %}Case #{{ case.id }}{% endblock %}
+{% block subheading %}<p>{{ case.created_at.strftime('%d %b %Y, %H:%M') }}{% if current_user.role == 'doctor' %} &nbsp;|&nbsp; Patient: <b>{{ case.patient.name }}</b>{% endif %}</p>{% endblock %}
+{% block content %}
+{% set bc = {'Normal': 'b-normal', 'Foot Ulcer (DFU)': 'b-dfu', 'Gangrene': 'b-gangrene'} %}
+<p style="margin-bottom:14px"><a href="{{ url_for('cases') }}">&larr; Back to records</a></p>
+<div class="case-layout">
+  <div>
+    <div class="card">
+      <img class="case-img" src="{{ url_for('case_image', case_id=case.id) }}" alt="Foot image">
+      <div class="result-head">
+        <span class="badge badge-lg {{ bc[case.prediction] }}">{{ case.prediction }}</span>
+        <span class="muted">AI confidence <b style="color:var(--text)">{{ case.confidence }}%</b></span>
+        <span class="badge s-{{ case.status }}">{{ case.status|capitalize }}</span>
+      </div>
+      {% for n, v in case.bars %}
+      <div class="bar-row"><span class="l">{{ n }}</span><div class="bar"><i style="width:{{ v }}%"></i></div><span class="v">{{ v }}%</span></div>
+      {% endfor %}
+      {% if case.patient_note %}<div class="note"><b>Patient note:</b> {{ case.patient_note }}</div>{% endif %}
+      {% if case.severity %}
+      <div class="note"><b>Estimated severity (experimental): {{ case.severity }}</b>
+        {% if case.severity_hint %}<br>{{ case.severity_hint }}{% endif %}
+        <br>Basic colour analysis only, not a validated clinical staging tool.</div>
+      {% endif %}
+      <div class="row mt">
+        <a class="btn btn-primary" href="{{ url_for('case_report', case_id=case.id) }}">Download PDF report</a>
+        {% if current_user.role == 'patient' %}
+        <form method="post" action="{{ url_for('delete_case', case_id=case.id) }}" onsubmit="return confirm('Delete this record permanently?')"><button class="btn btn-danger" type="submit">Delete</button></form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:20px">
+      <h2>Doctor review</h2>
+      {% if current_user.role == 'doctor' %}
+        <form method="post" action="{{ url_for('review', case_id=case.id) }}">
+          <div class="fg"><label>Your diagnosis</label>
+            <select name="diagnosis">{% for d in diagnoses %}<option value="{{ d }}" {{ 'selected' if (case.doctor_diagnosis or case.prediction) == d }}>{{ d }}</option>{% endfor %}</select></div>
+          <div class="fg"><label>Notes and advice for the patient</label><textarea name="note" rows="5" maxlength="2000" placeholder="Findings, treatment advice, follow-up...">{{ case.doctor_note or '' }}</textarea></div>
+          <button class="btn btn-primary btn-block" type="submit">{{ 'Update review' if case.reviewed_at else 'Save review' }}</button>
+        </form>
+      {% else %}
+        {% if case.reviewed_at %}
+          <div class="review-box"><b>Dr. {{ case.doctor.name }}</b>{% if case.doctor.specialization %} <span class="muted">({{ case.doctor.specialization }})</span>{% endif %}
+            <p style="margin-top:8px"><b>Diagnosis:</b> {{ case.doctor_diagnosis }}</p>
+            <p style="margin-top:6px;white-space:pre-line">{{ case.doctor_note }}</p>
+            <p class="muted" style="margin-top:8px;font-size:12.5px">Reviewed on {{ case.reviewed_at.strftime('%d %b %Y, %H:%M') }}. Your PDF report includes this review.</p></div>
+        {% elif case.doctor %}
+          <p class="muted">Waiting for <b>Dr. {{ case.doctor.name }}</b> to review this case.</p>
+        {% else %}
+          <p class="muted">This case is private. Share it with a doctor to get a professional review.</p>
+        {% endif %}
+        {% if doctors %}
+        <form method="post" action="{{ url_for('share', case_id=case.id) }}" class="mt">
+          <div class="fg"><label>{{ 'Share with another doctor' if case.doctor else 'Share with a doctor' }}</label>
+            <select name="doctor_id">{% for d in doctors %}<option value="{{ d.id }}" {{ 'selected' if case.doctor_id == d.id }}>Dr. {{ d.name }}{% if d.specialization %} ({{ d.specialization }}){% endif %}</option>{% endfor %}</select></div>
+          <button class="btn btn-outline" type="submit">Share case</button>
+        </form>
+        {% else %}<p class="muted mt">No doctors are registered yet.</p>{% endif %}
+      {% endif %}
+    </div>
+
+    <div class="rec rec-{{ rec.urgency }}">
+      {% if rec.urgency == 'high' %}<div class="emergency">Seek emergency medical care immediately</div>{% endif %}
+      <h3>{{ rec.urgency_label }}</h3><p>{{ rec.summary }}</p>
+      <ul>{% for s in rec.steps %}<li>{{ s }}</li>{% endfor %}</ul>
+    </div>
+
+    {% if ref %}
+    <div class="card"><h2>{{ ref.title }}</h2>
+      {% for k, d in ref.rows %}<div class="ref-row"><b>{{ k }}</b><span>{{ d }}</span></div>{% endfor %}
+      <div class="note">General medical reference. It is not derived from your image.</div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

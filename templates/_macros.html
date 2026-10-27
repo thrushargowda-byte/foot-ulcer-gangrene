@@ -1,0 +1,21 @@
+{% macro case_table(cases, role) %}
+{% set bc = {'Normal': 'b-normal', 'Foot Ulcer (DFU)': 'b-dfu', 'Gangrene': 'b-gangrene'} %}
+{% if cases %}
+<div style="overflow-x:auto"><table class="table">
+  <thead><tr><th></th>{% if role == 'doctor' %}<th>Patient</th>{% endif %}<th>Result</th><th>Confidence</th><th>Status</th><th>Date</th><th></th></tr></thead>
+  <tbody>
+  {% for c in cases %}
+  <tr>
+    <td><img class="thumb" src="{{ url_for('case_image', case_id=c.id) }}" alt=""></td>
+    {% if role == 'doctor' %}<td><b>{{ c.patient.name }}</b></td>{% endif %}
+    <td><span class="badge {{ bc[c.prediction] }}">{{ c.prediction }}</span></td>
+    <td>{{ c.confidence }}%</td>
+    <td><span class="badge s-{{ c.status }}">{{ c.status|capitalize }}</span></td>
+    <td class="muted">{{ c.created_at.strftime('%d %b %Y') }}</td>
+    <td><a class="btn btn-outline" href="{{ url_for('case_view', case_id=c.id) }}">View</a></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<div class="empty">No cases yet.</div>{% endif %}
+{% endmacro %}

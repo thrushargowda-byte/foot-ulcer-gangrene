@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import case_table %}
+{% block title %}Dashboard | FootGuard AI{% endblock %}
+{% block heading %}Hello, {% if current_user.role == 'doctor' %}Dr. {% endif %}{{ current_user.name }}{% endblock %}
+{% block subheading %}<p>{{ 'An overview of your scans and doctor feedback.' if current_user.role == 'patient' else 'An overview of the cases shared with you.' }}</p>{% endblock %}
+{% block content %}
+{% set p = current_user.role == 'patient' %}
+<div class="stat-grid">
+  <div class="card stat"><div class="si" style="background:var(--soft);color:var(--teal)"><svg class="ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div><b>{{ stats.total }}</b><span>{{ 'Total scans' if p else 'Cases shared with me' }}</span></div></div>
+  <div class="card stat"><div class="si" style="background:var(--ambersoft);color:var(--amber)"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>{{ stats.pending }}</b><span>{{ 'Awaiting doctor' if p else 'Needs my review' }}</span></div></div>
+  <div class="card stat"><div class="si" style="background:var(--greensoft);color:var(--green)"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div><b>{{ stats.reviewed }}</b><span>{{ 'Reviewed by doctor' if p else 'Reviewed by me' }}</span></div></div>
+  <div class="card stat"><div class="si" style="background:var(--redsoft);color:var(--red)"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div><div><b>{{ stats.urgent }}</b><span>Urgent (gangrene)</span></div></div>
+</div>
+<div class="card">
+  <div class="row between"><h2>Recent cases</h2>
+    {% if p %}<a class="btn btn-primary" href="{{ url_for('scan') }}">+ New scan</a>{% else %}<a class="btn btn-outline" href="{{ url_for('cases') }}">View all</a>{% endif %}</div>
+  {{ case_table(recent, current_user.role) }}
+</div>
+{% endblock %}

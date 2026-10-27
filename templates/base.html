@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}FootGuard AI{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+{% set app_layout = current_user.is_authenticated and not public_page %}
+<body class="{{ 'app' if app_layout else 'public' }}">
+{% if app_layout %}
+<aside class="sidebar">
+  <a class="brand" href="{{ url_for('dashboard') }}">{% include '_logo.html' %}<span>FootGuard AI</span></a>
+  <span class="role-chip">{{ current_user.role|capitalize }} portal</span>
+  <nav class="nav">
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}"><svg class="ico" viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"/></svg>Dashboard</a>
+    {% if current_user.role == 'patient' %}
+    <a href="{{ url_for('scan') }}" class="{{ 'active' if request.endpoint == 'scan' }}"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Scan</a>
+    <a href="{{ url_for('cases') }}" class="{{ 'active' if request.endpoint in ('cases','case_view') }}"><svg class="ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>My Records</a>
+    {% else %}
+    <a href="{{ url_for('cases') }}" class="{{ 'active' if request.endpoint in ('cases','case_view') }}"><svg class="ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Patient Cases</a>
+    {% endif %}
+  </nav>
+  <div class="user-box">
+    <div class="avatar">{{ current_user.name[0]|upper }}</div>
+    <div class="who"><b>{% if current_user.role == 'doctor' %}Dr. {% endif %}{{ current_user.name }}</b><span>{{ current_user.email }}</span></div>
+    <a href="{{ url_for('logout') }}" title="Log out"><svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></a>
+  </div>
+</aside>
+<main class="content">
+  <div class="topbar"><h1>{% block heading %}{% endblock %}</h1>{% block subheading %}{% endblock %}</div>
+  {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
+  {% block content %}{% endblock %}
+</main>
+{% else %}
+{% if not auth_page %}
+<header class="pubbar">
+  <a class="brand" href="{{ url_for('home') }}">{% include '_logo.html' %}<span>FootGuard AI</span></a>
+  <nav>
+    {% if current_user.is_authenticated %}
+      <a class="link" href="{{ url_for('dashboard') }}">Dashboard</a><a class="btn btn-outline" href="{{ url_for('logout') }}">Log out</a>
+    {% else %}
+      <a class="link" href="{{ url_for('login') }}">Log in</a><a class="btn btn-primary" href="{{ url_for('register') }}">Get started</a>
+    {% endif %}
+  </nav>
+</header>
+{% endif %}
+{% block public %}{% endblock %}
+{% endif %}
+</body>
+</html>

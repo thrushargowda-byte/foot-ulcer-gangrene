@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set public_page = true %}{% set auth_page = true %}
+{% block title %}Register | FootGuard AI{% endblock %}
+{% block public %}
+{% set role = form.get('role', 'patient') %}
+<div class="auth-wrap">
+  <div class="auth-side">
+    <a class="brand" href="{{ url_for('home') }}">{% include '_logo.html' %}<span>FootGuard AI</span></a>
+    <div><h2>Join FootGuard AI</h2><p>One platform for patients and doctors working on diabetic foot care.</p>
+      <ul><li>Patients: scan, store and share records</li><li>Doctors: review shared cases and add feedback</li><li>Separate, protected storage for every user</li></ul></div>
+    <small>Academic project. Not a certified medical device.</small>
+  </div>
+  <div class="auth-main"><div class="auth-box">
+    <h1>Create account</h1><p class="sub">Choose your role to get started.</p>
+    {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
+    <form method="post">
+      <div class="role-pick">
+        <label><input type="radio" name="role" value="patient" {{ 'checked' if role != 'doctor' }}>Patient<small>Scan and keep records</small></label>
+        <label><input type="radio" name="role" value="doctor" {{ 'checked' if role == 'doctor' }}>Doctor<small>Review shared cases</small></label>
+      </div>
+      <div class="fg"><label>Full name</label><input name="name" required value="{{ form.get('name','') }}" autocomplete="name"></div>
+      <div class="fg"><label>Email</label><input type="email" name="email" required value="{{ form.get('email','') }}" autocomplete="email"></div>
+      <div class="fg"><label>Password</label><input type="password" name="password" required minlength="6" autocomplete="new-password"><small>At least 6 characters</small></div>
+      <div id="doctor-fields" style="display:none">
+        <div class="fg"><label>Specialization</label><input name="specialization" value="{{ form.get('specialization','') }}" placeholder="e.g. Podiatrist, Diabetologist"></div>
+        <div class="fg"><label>Doctor access code</label><input name="code" autocomplete="off"><small>Provided by your institution</small></div>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Create account</button>
+    </form>
+    <p class="muted mt">Already registered? <a href="{{ url_for('login') }}"><b>Log in</b></a></p>
+  </div></div>
+</div>
+<script>
+  const radios = document.querySelectorAll('input[name=role]'), box = document.getElementById('doctor-fields');
+  const sync = () => box.style.display = document.querySelector('input[name=role]:checked').value === 'doctor' ? 'block' : 'none';
+  radios.forEach(r => r.addEventListener('change', sync)); sync();
+</script>
+{% endblock %}

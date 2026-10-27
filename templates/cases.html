@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import case_table %}
+{% block title %}Records | FootGuard AI{% endblock %}
+{% block heading %}{{ 'My records' if current_user.role == 'patient' else 'Patient cases' }}{% endblock %}
+{% block subheading %}<p>{{ 'Your scans and reports are visible only to you and the doctor you share them with.' if current_user.role == 'patient' else 'Only cases shared with you appear here.' }}</p>{% endblock %}
+{% block content %}
+<div class="tabs">
+  <a href="{{ url_for('cases') }}" class="{{ 'on' if not status }}">All</a>
+  {% if current_user.role == 'patient' %}<a href="{{ url_for('cases', status='private') }}" class="{{ 'on' if status == 'private' }}">Private</a>{% endif %}
+  <a href="{{ url_for('cases', status='pending') }}" class="{{ 'on' if status == 'pending' }}">{{ 'Pending' if current_user.role == 'patient' else 'Needs review' }}</a>
+  <a href="{{ url_for('cases', status='reviewed') }}" class="{{ 'on' if status == 'reviewed' }}">Reviewed</a>
+</div>
+<div class="card">{{ case_table(cases, current_user.role) }}</div>
+{% endblock %}
