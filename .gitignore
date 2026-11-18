@@ -22,3 +22,11 @@ backup_*/
 app.py.*
 instance/
 storage/
+
+all_files.txt
+apply_*.py
+make_admin.py
+part2.txt
+report_block.py
+tpl_keep/
+train_model_v2.py
