@@ -1059,12 +1059,15 @@ def delete_case(case_id):
 @app.route("/admin")
 @role_required("admin")
 def admin_dashboard():
-    status = request.args.get("status", "submitted")
+    status = request.args.get("status", "all")
     flow = ("submitted", "pending", "reviewed")
     stats = {s: Case.query.filter_by(status=s).count() for s in flow}
+    stats["all"] = sum(stats.values())
     q = Case.query.filter(Case.status.in_(flow))
-    if status in stats:
+    if status in flow:
         q = q.filter_by(status=status)
+    else:
+        status = "all"
     return render_template("admin.html", stats=stats, status=status,
                            cases=q.order_by(Case.created_at.desc()).all())
 

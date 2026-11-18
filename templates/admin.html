@@ -9,6 +9,7 @@
   <div class="card stat"><div class="si" style="background:var(--greensoft);color:var(--green)"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div><b>{{ stats.reviewed }}</b><span>Completed</span></div></div>
 </div>
 <div class="tabs">
+  <a href="?status=all" class="{{ 'on' if status == 'all' }}">All cases ({{ stats.all }})</a>
   <a href="?status=submitted" class="{{ 'on' if status == 'submitted' }}">Awaiting action ({{ stats.submitted }})</a>
   <a href="?status=pending" class="{{ 'on' if status == 'pending' }}">With doctor ({{ stats.pending }})</a>
   <a href="?status=reviewed" class="{{ 'on' if status == 'reviewed' }}">Completed ({{ stats.reviewed }})</a>
@@ -16,12 +17,13 @@
 <div class="card">
 {% if cases %}
 <div style="overflow-x:auto"><table class="table">
-  <thead><tr><th></th><th>Case</th><th>Patient</th><th>Requested doctor</th><th>Status</th><th>Date</th><th></th></tr></thead>
+  <thead><tr><th></th><th>Case</th><th>Patient</th><th>Source</th><th>Doctor</th><th>Status</th><th>Date</th><th></th></tr></thead>
   <tbody>
   {% for c in cases %}
   <tr>
     <td><img class="thumb" src="{{ url_for('case_image', case_id=c.id) }}" alt=""></td>
-    <td>#{{ c.id }}</td><td><b>{{ c.display_name }}</b></td>
+    <td>#{{ c.id }}</td><td><b>{{ c.display_name }}</b>{% set _pl = patient_login_info(c.patient_id) %}{% if _pl[1] %}<br><small>Patient ID: <b>{{ _pl[1] }}</b></small>{% endif %}</td>
+    <td>{% if c.created_by_id %}<span class="badge">Doctor scan</span>{% else %}Patient{% endif %}</td>
     <td>{{ ("Dr. " ~ c.doctor.name) if c.doctor else "-" }}</td>
     <td><span class="badge s-{{ c.status }}">{{ c.status|status_label('admin') }}</span></td>
     <td class="muted">{{ c.created_at.strftime("%d %b %Y") }}</td>
