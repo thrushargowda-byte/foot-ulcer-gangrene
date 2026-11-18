@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Case #{{ case.id }} | {{ APP_NAME }}{% endblock %}
+{% block heading %}Case #{{ case.id }}{% endblock %}
+{% block subheading %}<p>Status: <b>{{ case.status|status_label('admin') }}</b> &nbsp;|&nbsp; {{ case.created_at.strftime('%d %b %Y, %H:%M') }}</p>{% endblock %}
+{% block content %}
+<p style="margin-bottom:14px"><a href="{{ url_for('admin_dashboard') }}">&larr; Back to dashboard</a></p>
+<div class="case-layout">
+  <div class="card">
+    <h2>Photo</h2>
+    <img class="case-img" src="{{ url_for('case_image', case_id=case.id) }}" alt="Submitted photo">
+    {% if case.status == 'reviewed' %}<p class="mt"><a class="btn btn-outline" href="{{ url_for('case_report', case_id=case.id) }}">Download PDF report</a></p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Details</h2>
+    <p><b>Patient:</b> {{ case.display_name }}<br>
+    {% if case.p_age %}<b>Age:</b> {{ case.p_age }}<br>{% endif %}
+    {% if case.p_gender %}<b>Gender:</b> {{ case.p_gender }}<br>{% endif %}
+    {% if case.p_diabetic %}<b>Diabetic:</b> {{ case.p_diabetic }}<br>{% endif %}
+    {% if case.p_contact %}<b>Contact:</b> {{ case.p_contact }}<br>{% endif %}
+    <b>Requested doctor:</b> {{ ("Dr. " ~ case.doctor.name) if case.doctor else "-" }}<br>
+    {% if case.patient_note %}<b>Patient note:</b> {{ case.patient_note }}<br>{% endif %}
+    <b>Analysis:</b> {{ 'Done by the doctor' if case.analyzed else 'Not analyzed yet (done by the doctor)' }}</p>
+
+    {% if case.status in ("submitted", "pending") %}
+    <form method="post" action="{{ url_for('admin_forward', case_id=case.id) }}" class="mt">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="fg"><label>Assign a doctor</label>
+        <select name="doctor_id">
+          {% for d in doctors %}
+          {% set n = load.get(d.id, 0) %}
+          <option value="{{ d.id }}" {{ "selected" if case.doctor_id == d.id }}>Dr. {{ d.name }}{{ " (" ~ d.specialization ~ ")" if d.specialization }} - {{ 'available' if n == 0 else n ~ ' case' ~ ('s' if n != 1) ~ ' waiting' }}</option>
+          {% endfor %}
+        </select>
+        <small>Only active doctors are listed. The number shows how many cases each doctor already has waiting.</small></div>
+      <div class="fg"><label>Note (optional)</label><textarea name="note" rows="3" maxlength="500">{{ case.admin_note or "" }}</textarea></div>
+      <div class="row">
+        <button class="btn btn-primary" type="submit">{{ 'Forward to doctor' if case.status == 'submitted' else 'Reassign doctor' }}</button>
+        {% if case.status == "submitted" %}
+        <button class="btn btn-outline" type="submit" formaction="{{ url_for('admin_return', case_id=case.id) }}">Return to patient</button>
+        {% endif %}
+      </div>
+    </form>
+    {% elif case.status == "reviewed" %}
+    <div class="review-box mt"><b>Dr. {{ case.doctor.name }}</b>
+      <p style="margin-top:8px"><b>Diagnosis:</b> {{ case.doctor_diagnosis or "-" }}</p>
+      <p style="margin-top:6px;white-space:pre-line">{{ case.doctor_note or "-" }}</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

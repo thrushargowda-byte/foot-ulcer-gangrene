@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Doctors &amp; Users | {{ APP_NAME }}{% endblock %}
+{% block heading %}Doctors &amp; users{% endblock %}
+{% block subheading %}<p>Create doctor accounts and switch accounts active or inactive.</p>{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Add doctor</h2>
+  <form method="post" action="{{ url_for('admin_new_doctor') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row" style="gap:12px">
+      <div class="fg" style="flex:1;min-width:160px"><label>Full name</label><input name="name" required></div>
+      <div class="fg" style="flex:1;min-width:160px"><label>Email</label><input type="email" name="email" required></div>
+    </div>
+    <div class="row" style="gap:12px">
+      <div class="fg" style="flex:1;min-width:160px"><label>Specialization</label><input name="specialization" placeholder="e.g. Podiatrist"></div>
+      <div class="fg" style="flex:1;min-width:160px"><label>Temporary password</label><input type="password" name="password" required minlength="6"></div>
+    </div>
+    <button class="btn btn-primary" type="submit">Create doctor</button>
+  </form>
+</div>
+
+{% for title, users in [("Doctors", doctors), ("Patients", patients)] %}
+<div class="card mt">
+  <h2>{{ title }}</h2>
+  {% if users %}
+  <div style="overflow-x:auto"><table class="table">
+    <thead><tr><th>Name</th><th>Email</th>{% if title == 'Doctors' %}<th>Cases waiting</th>{% endif %}<th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+      <td><b>{{ u.name }}</b>{% if u.specialization %} <span class="muted">({{ u.specialization }})</span>{% endif %}</td><td>{{ u.email }}</td>
+      {% if title == 'Doctors' %}<td>{{ load.get(u.id, 0) }}</td>{% endif %}
+      <td><span class="badge {{ 's-reviewed' if u.active else 's-returned' }}">{{ "Active" if u.active else "Inactive" }}</span></td>
+      <td>
+        <form method="post" action="{{ url_for('admin_toggle_user', uid=u.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline" type="submit">{{ "Deactivate" if u.active else "Activate" }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">None yet.</div>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

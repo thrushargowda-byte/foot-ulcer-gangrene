@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin | {{ APP_NAME }}{% endblock %}
+{% block heading %}Admin dashboard{% endblock %}
+{% block subheading %}<p>Check the photos patients send and forward them to doctors.</p>{% endblock %}
+{% block content %}
+<div class="stat-grid">
+  <div class="card stat"><div class="si" style="background:var(--ambersoft);color:var(--amber)"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>{{ stats.submitted }}</b><span>Awaiting action</span></div></div>
+  <div class="card stat"><div class="si" style="background:var(--soft);color:var(--primary)"><svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div><div><b>{{ stats.pending }}</b><span>With doctors</span></div></div>
+  <div class="card stat"><div class="si" style="background:var(--greensoft);color:var(--green)"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><div><b>{{ stats.reviewed }}</b><span>Completed</span></div></div>
+</div>
+<div class="tabs">
+  <a href="?status=submitted" class="{{ 'on' if status == 'submitted' }}">Awaiting action ({{ stats.submitted }})</a>
+  <a href="?status=pending" class="{{ 'on' if status == 'pending' }}">With doctor ({{ stats.pending }})</a>
+  <a href="?status=reviewed" class="{{ 'on' if status == 'reviewed' }}">Completed ({{ stats.reviewed }})</a>
+</div>
+<div class="card">
+{% if cases %}
+<div style="overflow-x:auto"><table class="table">
+  <thead><tr><th></th><th>Case</th><th>Patient</th><th>Requested doctor</th><th>Status</th><th>Date</th><th></th></tr></thead>
+  <tbody>
+  {% for c in cases %}
+  <tr>
+    <td><img class="thumb" src="{{ url_for('case_image', case_id=c.id) }}" alt=""></td>
+    <td>#{{ c.id }}</td><td><b>{{ c.display_name }}</b></td>
+    <td>{{ ("Dr. " ~ c.doctor.name) if c.doctor else "-" }}</td>
+    <td><span class="badge s-{{ c.status }}">{{ c.status|status_label('admin') }}</span></td>
+    <td class="muted">{{ c.created_at.strftime("%d %b %Y") }}</td>
+    <td><a class="btn btn-outline" href="{{ url_for('admin_case', case_id=c.id) }}">Open</a></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<div class="empty">No cases here.</div>{% endif %}
+</div>
+{% endblock %}

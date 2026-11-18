@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set public_page = true %}
+{% block title %}Create account | {{ APP_NAME }}{% endblock %}
+{% block public %}
+<section class="section choose-wrap">
+  <h2>Create your account</h2><p class="sub">How would you like to continue?</p>
+  {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
+  <div class="choose">
+    <a class="card choose-card" href="{{ url_for('register') }}?as=patient">
+      <div class="fi"><svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div>
+      <h3>Patient</h3><p>Register, send a photo of your foot, choose a doctor and receive the recommendation.</p>
+      <span class="btn btn-primary">Continue as patient</span>
+    </a>
+    <a class="card choose-card" href="{{ url_for('register') }}?as=doctor">
+      <div class="fi"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg></div>
+      <h3>Doctor</h3><p>Doctor accounts are created by the admin. Log in with the email and password you were given.</p>
+      <span class="btn btn-outline">Doctor login</span>
+    </a>
+  </div>
+  <p class="muted mt" style="text-align:center">Already have an account? <a href="{{ url_for('login', role='patient') }}"><b>Log in</b></a></p>
+</section>
+{% endblock %}
