@@ -785,6 +785,31 @@ def patient_login_info(patient_id):
     return (u.email, u.activation_code) if u else (None, None)
 app.jinja_env.globals["patient_login_info"] = patient_login_info
 
+@app.route("/case/<int:case_id>/resend-id", methods=["POST"])
+@role_required("doctor")
+def resend_patient_id(case_id):
+    c = get_case(case_id)
+    patient = db.session.get(User, c.patient_id)
+    if patient and patient.activation_code:
+        info = email_activation(patient)
+        flash(info, "success" if "emailed to" in info else "error")
+    else:
+        flash("This patient has already activated their account.", "error")
+    return redirect(url_for("case_view", case_id=c.id))
+
+
+@app.route("/case/<int:case_id>/resend-report", methods=["POST"])
+@role_required("doctor")
+def resend_report(case_id):
+    c = get_case(case_id)
+    if c.status != "reviewed":
+        flash("Send the result to the patient first.", "error")
+    else:
+        make_report(c)
+        ok, info = email_report(c)
+        flash(info, "success" if ok else "error")
+    return redirect(url_for("case_view", case_id=c.id))
+
 # ------------------------------------------------------------------ PATIENT: ACTIVATE ACCOUNT
 @app.route("/activate", methods=["GET", "POST"])
 def activate():
