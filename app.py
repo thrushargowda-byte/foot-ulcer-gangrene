@@ -810,6 +810,19 @@ def resend_report(case_id):
         flash(info, "success" if ok else "error")
     return redirect(url_for("case_view", case_id=c.id))
 
+@app.route("/admin/user/<int:uid>/reset-access", methods=["POST"])
+@role_required("admin")
+def admin_reset_access(uid):
+    import secrets
+    u = db.session.get(User, uid)
+    if not u or u.role != "patient":
+        abort(404)
+    u.activation_code = "FG-" + secrets.token_hex(4).upper()
+    db.session.commit()
+    flash(f"New Patient ID for {u.email}: {u.activation_code}. "
+          "The patient opens the Activate page and sets a new password.", "success")
+    return redirect(url_for("admin_users"))
+
 # ------------------------------------------------------------------ PATIENT: ACTIVATE ACCOUNT
 @app.route("/activate", methods=["GET", "POST"])
 def activate():

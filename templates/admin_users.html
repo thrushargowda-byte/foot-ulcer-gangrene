@@ -32,7 +32,7 @@
       {% if title == 'Doctors' %}<td>{{ load.get(u.id, 0) }}</td>{% endif %}
       <td><span class="badge {{ 's-reviewed' if u.active else 's-returned' }}">{{ "Active" if u.active else "Inactive" }}</span></td>
       <td>
-        <form method="post" action="{{ url_for('admin_toggle_user', uid=u.id) }}">
+        {% if u.role == 'patient' %}<form method="post" action="{{ url_for('admin_reset_access', uid=u.id) }}" style="display:inline" onsubmit="return confirm('Create a new Patient ID for this patient?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline" type="submit" style="margin-right:6px">Reset access</button></form>{% endif %}<form method="post" action="{{ url_for('admin_toggle_user', uid=u.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-outline" type="submit">{{ "Deactivate" if u.active else "Activate" }}</button>
         </form>
