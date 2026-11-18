@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Activate your account | {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:40px auto">
+  <h2>Activate your account</h2>
+  <p class="muted">Enter the email your doctor used and the Patient ID from your email, then choose your own password.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="fg"><label>Email</label>
+      <input type="text" inputmode="email" name="email" required></div>
+    <div class="fg"><label>Patient ID</label>
+      <input type="text" name="patient_id" placeholder="FG-XXXXXXXX" required></div>
+    <div class="fg"><label>New password (at least 8 characters)</label>
+      <input type="password" name="password" minlength="8" required></div>
+    <div class="fg"><label>Confirm password</label>
+      <input type="password" name="confirm" minlength="8" required></div>
+    <button class="btn btn-primary btn-block btn-lg" type="submit">Activate and log in</button>
+  </form>
+</div>
+{% endblock %}

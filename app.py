@@ -86,6 +86,7 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(10))
     diabetic = db.Column(db.String(10))
     contact = db.Column(db.String(30))
+    activation_code = db.Column(db.String(20))  # set until the patient activates the account
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     @property
@@ -720,11 +721,13 @@ def email_report(c):
     msg["Subject"] = "Your foot scan report - Foot Ulcer and Gangrene Detection"
     msg["From"] = user
     msg["To"] = to
-    msg.set_content(
-        f"Hello {c.p_name or patient.name},\n\n"
-        f"Dr. {current_user.name} has reviewed your foot scan. Your report is attached as a PDF.\n\n"
-        "This is an academic tool and not a certified medical device. It does not replace "
-        "professional diagnosis. Please follow your doctor's advice.\n")
+    body = (f"Hello {c.p_name or patient.name},\n\n"
+            f"Dr. {current_user.name} has reviewed your foot scan. Your report is attached as a PDF.\n\n"
+            "This is an academic tool and not a certified medical device. It does not replace "
+            "professional diagnosis. Please follow your doctor's advice.\n")
+    if patient.activation_code:
+        body += activation_text(patient)
+    msg.set_content(body)
     with open(path, "rb") as fh:
         msg.add_attachment(fh.read(), maintype="application", subtype="pdf",
                            filename=f"Foot_Ulcer_Gangrene_case_{c.id}.pdf")
@@ -739,24 +742,31 @@ def email_report(c):
         return False, f"The report could not be emailed ({type(e).__name__}). You can still download it from the case page."
     return True, f"Report emailed to {to}."
 
-def email_login(to, name, temp_pw):
-    """Email a new patient their login details. Returns a short message for the doctor."""
+def activation_text(patient):
+    return ("\nFIRST TIME HERE? Set up your account to see your records online:\n"
+            f"1. Open: {request.host_url}activate\n"
+            f"2. Email: {patient.email}\n"
+            f"3. Patient ID: {patient.activation_code}\n"
+            "4. Choose your own password.\n"
+            "After that, log in with your email and password. All future reports will appear in your account.\n")
+
+
+def email_activation(patient):
+    """Email a new patient their Patient ID and the activation link. Returns a short message for the doctor."""
     import smtplib, ssl
     from email.message import EmailMessage
     user, pw = os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASS")
     if not (user and pw):
-        return "Email is not set up, so please share these login details with the patient yourself."
+        return "Email is not set up, so please give the Patient ID to the patient yourself."
     msg = EmailMessage()
-    msg["Subject"] = "Your login - Foot Ulcer and Gangrene Detection"
+    msg["Subject"] = "Your Patient ID - Foot Ulcer and Gangrene Detection"
     msg["From"] = user
-    msg["To"] = to
+    msg["To"] = patient.email
     msg.set_content(
-        f"Hello {name},\n\n"
-        f"Dr. {current_user.name} has created an account for you.\n\n"
-        f"Log in: {request.host_url}login?role=patient\n"
-        f"Email: {to}\n"
-        f"Temporary password: {temp_pw}\n\n"
-        "Your result will appear under My Records once your doctor has sent it.\n")
+        f"Hello {patient.name},\n\n"
+        f"Dr. {current_user.name} has started a foot scan record for you. "
+        "Your report will be emailed to you once the doctor has reviewed it.\n"
+        + activation_text(patient))
     try:
         with smtplib.SMTP(os.environ.get("SMTP_HOST", "smtp.gmail.com"),
                           int(os.environ.get("SMTP_PORT", "587")), timeout=20) as srv:
@@ -764,9 +774,38 @@ def email_login(to, name, temp_pw):
             srv.login(user, pw)
             srv.send_message(msg)
     except Exception:
-        app.logger.exception("Login email failed")
-        return "The login details could not be emailed, so please share them with the patient yourself."
-    return f"Login details emailed to {to}."
+        app.logger.exception("Activation email failed")
+        return "The Patient ID could not be emailed, so please give it to the patient yourself."
+    return f"Patient ID emailed to {patient.email}."
+
+
+# ------------------------------------------------------------------ PATIENT: ACTIVATE ACCOUNT
+@app.route("/activate", methods=["GET", "POST"])
+def activate():
+    if request.method == "POST":
+        import hmac
+        from flask_login import login_user
+        from werkzeug.security import generate_password_hash
+        email = request.form.get("email", "").strip().lower()
+        code = request.form.get("patient_id", "").strip().upper()
+        pw, pw2 = request.form.get("password", ""), request.form.get("confirm", "")
+        u = User.query.filter_by(email=email, role="patient").first()
+        ok = bool(u and u.active and u.activation_code and hmac.compare_digest(u.activation_code, code))
+        if not ok:
+            flash("The email or Patient ID is not correct, or this account is already set up. Try logging in instead.", "error")
+        elif len(pw) < 8:
+            flash("The password must be at least 8 characters.", "error")
+        elif pw != pw2:
+            flash("The two passwords do not match.", "error")
+        else:
+            u.password_hash = generate_password_hash(pw)
+            u.activation_code = None
+            db.session.commit()
+            login_user(u)
+            flash("Your account is ready. Your records will appear here once your doctor sends them.", "success")
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("activate"))
+    return render_template("activate.html")
 
 # ------------------------------------------------------------------ DOCTOR: NEW PATIENT SCAN
 @app.route("/doctor/new-scan", methods=["GET", "POST"])
@@ -798,14 +837,15 @@ def doctor_new_scan():
         if patient and patient.role != "patient":
             flash("That email belongs to a doctor or admin account. Please use the patient's own email.", "error")
             return redirect(url_for("doctor_new_scan"))
-        new_login = None
+        new_patient = False
         if not patient:
             import secrets
-            new_login = secrets.token_hex(4)   # temporary password, 8 characters
+            new_patient = True
             patient = User(name=p_name, email=p_email,
-                           password_hash=generate_password_hash(new_login),
+                           password_hash=generate_password_hash(uuid.uuid4().hex),
                            role="patient", active=True, age=p_age, gender=p_gender,
-                           diabetic=p_diabetic, contact=p_contact)
+                           diabetic=p_diabetic, contact=p_contact,
+                           activation_code="FG-" + secrets.token_hex(4).upper())
             db.session.add(patient)
             db.session.flush()
 
@@ -827,9 +867,9 @@ def doctor_new_scan():
         db.session.add(case)
         db.session.commit()
         flash("Patient case created. Run the analysis below.", "success")
-        if new_login:
-            info = email_login(p_email, p_name, new_login)
-            flash(f"Patient login created. Email: {p_email}   Temporary password: {new_login}. {info}", "success")
+        if new_patient:
+            info = email_activation(patient)
+            flash(f"New patient account created. Patient ID: {patient.activation_code}. {info}", "success")
         return redirect(url_for("case_view", case_id=case.id))
     return render_template("doctor_scan.html")
 
