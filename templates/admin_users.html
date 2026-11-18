@@ -28,7 +28,7 @@
     <tbody>
     {% for u in users %}
     <tr>
-      <td><b>{{ u.name }}</b>{% if u.specialization %} <span class="muted">({{ u.specialization }})</span>{% endif %}</td><td>{{ u.email }}</td>
+      <td><b>{{ u.name }}</b>{% if u.specialization %} <span class="muted">({{ u.specialization }})</span>{% endif %}</td><td>{{ u.email }}{% if u.activation_code %}<br><small>Patient ID: <b>{{ u.activation_code }}</b></small>{% endif %}</td>
       {% if title == 'Doctors' %}<td>{{ load.get(u.id, 0) }}</td>{% endif %}
       <td><span class="badge {{ 's-reviewed' if u.active else 's-returned' }}">{{ "Active" if u.active else "Inactive" }}</span></td>
       <td>

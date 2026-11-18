@@ -779,6 +779,12 @@ def email_activation(patient):
     return f"Patient ID emailed to {patient.email}."
 
 
+def patient_login_info(patient_id):
+    """(email, Patient ID) for a patient. The ID is None once the patient has activated."""
+    u = db.session.get(User, patient_id) if patient_id else None
+    return (u.email, u.activation_code) if u else (None, None)
+app.jinja_env.globals["patient_login_info"] = patient_login_info
+
 # ------------------------------------------------------------------ PATIENT: ACTIVATE ACCOUNT
 @app.route("/activate", methods=["GET", "POST"])
 def activate():
