@@ -14,3 +14,11 @@ cert.pem
 key.pem
 
 dataset/
+
+key.pem
+cert.pem
+backup_*/
+*.bak*
+app.py.*
+instance/
+storage/
