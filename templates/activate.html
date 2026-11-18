@@ -1,20 +1,36 @@
-{% extends "base.html" %}
-{% block title %}Activate your account | {{ APP_NAME }}{% endblock %}
-{% block content %}
-<div class="card" style="max-width:480px;margin:40px auto">
-  <h2>Activate your account</h2>
-  <p class="muted">Enter the email your doctor used and the Patient ID from your email, then choose your own password.</p>
-  <form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="fg"><label>Email</label>
-      <input type="text" inputmode="email" name="email" required></div>
-    <div class="fg"><label>Patient ID</label>
-      <input type="text" name="patient_id" placeholder="FG-XXXXXXXX" required></div>
-    <div class="fg"><label>New password (at least 8 characters)</label>
-      <input type="password" name="password" minlength="8" required></div>
-    <div class="fg"><label>Confirm password</label>
-      <input type="password" name="confirm" minlength="8" required></div>
-    <button class="btn btn-primary btn-block btn-lg" type="submit">Activate and log in</button>
-  </form>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activate your account | {{ APP_NAME }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=CSS_V) }}">
+</head>
+<body style="background:#f1f5f9;min-height:100vh;margin:0">
+<div style="max-width:480px;margin:0 auto;padding:40px 16px">
+  <a class="brand" href="{{ url_for('home') }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#0f172a;font-weight:700;margin-bottom:20px">{% include '_logo.html' %}<span>{{ APP_NAME }}</span></a>
+  <div class="card">
+    <h2>Activate your account</h2>
+    <p class="muted">Enter the email your doctor used and the Patient ID from your email, then choose your own password.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, m in messages %}
+        <div style="margin:12px 0;padding:12px 14px;border-radius:10px;{{ 'background:#fde2e2;color:#9b1c1c' if cat == 'error' else 'background:#dcfce7;color:#166534' }}">{{ m }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="fg"><label>Email</label>
+        <input type="text" inputmode="email" name="email" required></div>
+      <div class="fg"><label>Patient ID</label>
+        <input type="text" name="patient_id" placeholder="FG-XXXXXXXX" required></div>
+      <div class="fg"><label>New password (at least 8 characters)</label>
+        <input type="password" name="password" minlength="8" required></div>
+      <div class="fg"><label>Confirm password</label>
+        <input type="password" name="confirm" minlength="8" required></div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Activate and log in</button>
+    </form>
+    <p class="muted" style="margin-top:14px">Already activated? <a href="{{ url_for('login', role='patient') }}"><b>Log in</b></a></p>
+  </div>
 </div>
-{% endblock %}
+</body>
+</html>
