@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}New patient scan | {{ APP_NAME }}{% endblock %}
+{% block heading %}New patient scan{% endblock %}
+{% block subheading %}<p>Enter the patient's details and upload the foot or wound photo.</p>{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="case-layout" id="scanForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card">
+    <h2>1. Patient details</h2>
+    <div class="fg"><label>Patient name</label>
+      <input type="text" name="p_name" maxlength="80" required></div>
+    <div class="fg"><label>Age</label>
+      <input type="number" name="p_age" min="1" max="120" required></div>
+    <div class="fg"><label>Gender</label>
+      <select name="p_gender" required>
+        <option value="">Select</option><option>Male</option><option>Female</option><option>Other</option>
+      </select></div>
+    <div class="fg"><label>Diabetic?</label>
+      <select name="p_diabetic" required>
+        <option value="">Select</option><option>Yes</option><option>No</option><option>Not sure</option>
+      </select></div>
+    <div class="fg"><label>Contact number</label>
+      <input type="tel" name="p_contact" maxlength="30" required></div>
+    <div class="fg"><label>Clinical notes (optional)</label>
+      <textarea name="patient_note" rows="3" maxlength="1000"></textarea></div>
+  </div>
+  <div class="card">
+    <h2>2. Photo</h2>
+    <div class="dropzone" id="dz">
+      <input type="file" id="file" name="file" accept=".png,.jpg,.jpeg" required>
+      <p><b>Click to upload or drag &amp; drop</b></p>
+      <p class="muted">PNG, JPG or JPEG, up to 10 MB</p>
+      <img id="preview" class="preview" alt="Preview">
+    </div>
+    <button class="btn btn-primary btn-block btn-lg mt" type="submit" id="goBtn">Save and open case</button>
+    <div class="note">The case is assigned to you. You can run the analysis on the next page.</div>
+  </div>
+</form>
+<script>
+const dz = document.getElementById('dz'), file = document.getElementById('file'), prev = document.getElementById('preview');
+function show() { if (file.files[0]) { const r = new FileReader(); r.onload = e => { prev.src = e.target.result; prev.style.display = 'block'; }; r.readAsDataURL(file.files[0]); } }
+dz.addEventListener('click', e => { if (e.target !== file) file.click(); });
+file.addEventListener('change', show);
+['dragenter', 'dragover'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove('over'); }));
+dz.addEventListener('drop', e => { if (e.dataTransfer.files.length) { file.files = e.dataTransfer.files; show(); } });
+document.getElementById('scanForm').addEventListener('submit', () => { document.getElementById('goBtn').textContent = 'Saving... please wait'; });
+</script>
+{% endblock %}

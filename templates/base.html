@@ -22,6 +22,7 @@
     <a href="{{ url_for('admin_users') }}" class="{{ 'active' if request.endpoint == 'admin_users' }}"><svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Doctors &amp; Users</a>
     {% else %}
     <a href="{{ url_for('cases') }}" class="{{ 'active' if request.endpoint in ('cases','case_view') }}"><svg class="ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Patient Cases</a>
+    <a href="{{ url_for('doctor_new_scan') }}" class="{{ 'active' if request.endpoint == 'doctor_new_scan' }}"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Scan</a>
     {% endif %}
   </nav>
   <div class="switch"><span>Switch portal</span>

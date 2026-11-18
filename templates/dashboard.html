@@ -4,6 +4,9 @@
 {% block heading %}Hello, {% if current_user.role == 'doctor' %}Dr. {% endif %}{{ current_user.name }}{% endblock %}
 {% block subheading %}<p>{{ 'Track the photos you sent and the results from your doctor.' if current_user.role == 'patient' else 'Cases the admin has forwarded to you.' }}</p>{% endblock %}
 {% block content %}
+{% if current_user.role == 'doctor' %}
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><a class="btn btn-primary" href="{{ url_for('doctor_new_scan') }}">+ New Scan</a></div>
+{% endif %}
 {% set p = current_user.role == 'patient' %}
 <div class="stat-grid">
   <div class="card stat"><div class="si" style="background:var(--soft);color:var(--primary)"><svg class="ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div><b>{{ stats.total }}</b><span>{{ 'Photos sent' if p else 'Cases assigned to me' }}</span></div></div>

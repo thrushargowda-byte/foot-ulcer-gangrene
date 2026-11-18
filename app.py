@@ -701,6 +701,56 @@ def scan():
         return redirect(url_for("case_view", case_id=case.id))
     return render_template("scan.html", doctors=doctors)
 
+# ------------------------------------------------------------------ DOCTOR: NEW PATIENT SCAN
+@app.route("/doctor/new-scan", methods=["GET", "POST"])
+@role_required("doctor")
+def doctor_new_scan():
+    if request.method == "POST":
+        f = request.files.get("file")
+        ext = f.filename.rsplit(".", 1)[-1].lower() if f and f.filename else ""
+        if ext not in ALLOWED:
+            flash("Please upload a PNG or JPG image.", "error")
+            return redirect(url_for("doctor_new_scan"))
+        p_name = request.form.get("p_name", "").strip()[:80]
+        p_age = request.form.get("p_age", type=int)
+        p_gender = request.form.get("p_gender", "").strip()[:10]
+        p_diabetic = request.form.get("p_diabetic", "").strip()[:10]
+        p_contact = request.form.get("p_contact", "").strip()[:30]
+        note = request.form.get("patient_note", "").strip()[:1000]
+        if not (p_name and p_age and p_gender and p_diabetic and p_contact):
+            flash("Please fill in all the patient details.", "error")
+            return redirect(url_for("doctor_new_scan"))
+
+        from werkzeug.security import generate_password_hash
+        # walk-in patient record (inactive, cannot log in) so the case has a patient_id
+        patient = User(name=p_name, email=f"walkin-{uuid.uuid4().hex[:12]}@walkin.local",
+                       password_hash=generate_password_hash(uuid.uuid4().hex),
+                       role="patient", active=False, age=p_age, gender=p_gender,
+                       diabetic=p_diabetic, contact=p_contact)
+        db.session.add(patient)
+        db.session.flush()
+
+        folder = os.path.join(IMG_DIR, f"patient_{patient.id}")
+        os.makedirs(folder, exist_ok=True)
+        name = uuid.uuid4().hex + "." + ext
+        path = os.path.join(folder, name)
+        f.save(path)
+        if not is_likely_skin_image(path):
+            os.remove(path)
+            db.session.rollback()
+            flash("This doesn't look like a photo of skin. Please upload a clear photo of the affected foot.", "error")
+            return redirect(url_for("doctor_new_scan"))
+
+        case = Case(patient_id=patient.id, doctor_id=current_user.id, image_file=name,
+                    prediction=NOT_ANALYZED, status="pending", created_by_id=current_user.id,
+                    p_name=p_name, p_age=p_age, p_gender=p_gender,
+                    p_diabetic=p_diabetic, p_contact=p_contact, patient_note=note or None)
+        db.session.add(case)
+        db.session.commit()
+        flash("Patient case created. Run the analysis below.", "success")
+        return redirect(url_for("case_view", case_id=case.id))
+    return render_template("doctor_scan.html")
+
 # ------------------------------------------------------------------ CASE: VIEW / FILES
 @app.route("/case/<int:case_id>")
 @login_required
