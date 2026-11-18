@@ -1,50 +1,73 @@
 {% extends "base.html" %}
 {% set public_page = true %}
-{% block title %}FootGuard AI | Diabetic Foot Ulcer & Gangrene Detection{% endblock %}
+{% block title %}{{ APP_NAME }}{% endblock %}
 {% block public %}
 {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}" style="margin:12px 5vw 0">{{ m }}</div>{% endfor %}{% endwith %}
 <section class="hero"><div class="hero-grid">
   <div>
-    <span class="eyebrow">AI-powered clinical screening</span>
-    <h1>Early detection support for diabetic foot complications</h1>
-    <p class="lead">Upload a foot photo and get an instant AI screening for foot ulcers and gangrene. Keep your records private and share them with a doctor for review.</p>
+    <span class="eyebrow">Clinical screening support</span>
+    <h1>Foot Ulcer and Gangrene Detection</h1>
+    <p class="lead">Send a photo of your foot or wound and choose a doctor. An admin checks your case and assigns the doctor, the doctor analyzes the photo, and you receive the recommendation with a PDF report.</p>
     <div class="cta">
       <a class="btn btn-light btn-lg" href="{{ url_for('register') }}">Create account</a>
-      <a class="btn btn-ghost btn-lg" href="{{ url_for('login') }}">Log in</a>
+      <a class="btn btn-ghost btn-lg" href="{{ url_for('login', role='patient') }}">Log in</a>
+      <a class="btn btn-ghost btn-lg" href="{{ url_for('login', role='admin') }}">Admin</a>
     </div>
-    <div class="numbers"><div><b>96%</b><span>Test accuracy</span></div><div><b>1,346</b><span>Training images</span></div><div><b>3</b><span>Conditions classified</span></div></div>
   </div>
-  <div class="hero-card">
-    <h3>What the AI looks for</h3>
-    <div class="class-row"><span class="dot g"></span><div><b>Normal</b><small>Healthy skin, preventive care tips</small></div></div>
-    <div class="class-row"><span class="dot a"></span><div><b>Foot Ulcer (DFU)</b><small>See a doctor promptly</small></div></div>
-    <div class="class-row"><span class="dot r"></span><div><b>Gangrene</b><small>Urgent medical attention</small></div></div>
+  <div class="hero-art">
+    <svg viewBox="0 0 360 300" role="img" aria-label="Illustration of a foot being scanned">
+      <defs>
+        <linearGradient id="sc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8" stop-opacity="0"/><stop offset=".5" stop-color="#7DD3FC"/><stop offset="1" stop-color="#38BDF8" stop-opacity="0"/></linearGradient>
+        <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3C9A8"/><stop offset="1" stop-color="#E0A47E"/></linearGradient>
+      </defs>
+      <rect x="0" y="0" width="360" height="300" rx="22" fill="#0E2556"/>
+      <g stroke="#1F3F85" stroke-width="1" opacity=".55">
+        <path d="M0 60H360M0 120H360M0 180H360M0 240H360M60 0V300M120 0V300M180 0V300M240 0V300M300 0V300"/>
+      </g>
+      <g transform="translate(4 6)">
+        <path d="M168 78c36-8 58 22 56 74-2 44-12 78-40 96-24 14-52 4-57-22-4-30 8-58 14-86 5-26 9-54 27-62z" fill="url(#skin)"/>
+        <g fill="#F0BC98">
+          <ellipse cx="146" cy="70" rx="11" ry="13"/><ellipse cx="171" cy="58" rx="10" ry="12"/>
+          <ellipse cx="195" cy="58" rx="9.5" ry="11.5"/><ellipse cx="216" cy="68" rx="9" ry="11"/>
+          <ellipse cx="231" cy="86" rx="8" ry="10"/>
+        </g>
+        <circle cx="190" cy="132" r="22" fill="#B45309" opacity=".35"/>
+        <circle cx="190" cy="132" r="14" fill="#9A3412"/>
+        <circle cx="190" cy="132" r="7" fill="#450A0A"/>
+        <ellipse cx="160" cy="204" rx="15" ry="11" fill="#78350F" opacity=".8"/>
+      </g>
+      <rect x="60" y="126" width="244" height="3" fill="url(#sc)"/>
+      <g fill="none" stroke="#38BDF8" stroke-width="4" stroke-linecap="round">
+        <path d="M46 78V50a8 8 0 0 1 8-8h28M314 78V50a8 8 0 0 0-8-8h-28M46 224v28a8 8 0 0 0 8 8h28M314 224v28a8 8 0 0 1-8 8h-28"/>
+      </g>
+      <g font-family="Plus Jakarta Sans, Arial, sans-serif" font-weight="700" font-size="12">
+        <rect x="222" y="168" width="108" height="30" rx="15" fill="#FEE2E2"/><circle cx="238" cy="183" r="5" fill="#DC2626"/><text x="250" y="187" fill="#991B1B">Gangrene</text>
+        <rect x="30" y="112" width="104" height="30" rx="15" fill="#FEF3C7"/><circle cx="46" cy="127" r="5" fill="#D97706"/><text x="58" y="131" fill="#92400E">Foot ulcer</text>
+        <rect x="30" y="196" width="76" height="30" rx="15" fill="#DCFCE7"/><circle cx="46" cy="211" r="5" fill="#16A34A"/><text x="58" y="215" fill="#166534">Normal</text>
+      </g>
+    </svg>
+    <p>AI-assisted screening of foot photos</p>
   </div>
 </div></section>
 
 <section class="section">
-  <h2>Everything in one place</h2><p class="sub">Screening, secure storage and doctor feedback, built for diabetic foot care.</p>
+  <h2>Three conditions we screen for</h2><p class="sub">The detection model classifies every photo into one of these groups.</p>
   <div class="grid3">
-    <div class="card feature"><div class="fi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8"/></svg></div><h3>AI-powered screening</h3><p>An SE-ResNet50 deep learning model classifies each image with confidence scores and care guidance.</p></div>
-    <div class="card feature"><div class="fi"><svg class="ico" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h3>Private records</h3><p>Every scan and PDF report is stored under your account. Only you and the doctor you choose can open it.</p></div>
-    <div class="card feature"><div class="fi"><svg class="ico" viewBox="0 0 24 24"><path d="M9 4h6v3H9zM7 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1M9 14l2 2 4-4"/></svg></div><h3>Doctor review</h3><p>Doctors confirm or correct the AI result and add notes. Your report is updated with their feedback.</p></div>
+    <div class="card cond c-g"><span class="dot g"></span><h3>Normal</h3><p>No sign of ulcer or gangrene. You get preventive foot-care advice.</p></div>
+    <div class="card cond c-a"><span class="dot a"></span><h3>Foot Ulcer (DFU)</h3><p>An open sore, common in diabetes. Early medical care prevents infection and gangrene.</p></div>
+    <div class="card cond c-r"><span class="dot r"></span><h3>Gangrene</h3><p>Dead tissue caused by lost blood supply or infection. It needs urgent medical attention.</p></div>
   </div>
 </section>
 
 <div class="band"><section class="section">
   <h2>How it works</h2><p class="sub">Four simple steps from photo to professional feedback.</p>
   <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Register</h3><p>Sign up as a patient or as a doctor.</p></div>
-    <div class="step"><div class="n">2</div><h3>Scan</h3><p>Upload or capture a clear foot photo.</p></div>
-    <div class="step"><div class="n">3</div><h3>Share</h3><p>Send the case to a doctor of your choice.</p></div>
-    <div class="step"><div class="n">4</div><h3>Review &amp; report</h3><p>Receive the doctor's note and a PDF report.</p></div>
+    <div class="step"><div class="n">1</div><h3>Send a photo</h3><p>Create a patient account, upload a photo and choose a doctor.</p></div>
+    <div class="step"><div class="n">2</div><h3>Admin assigns</h3><p>The admin checks your details and assigns an available doctor.</p></div>
+    <div class="step"><div class="n">3</div><h3>Doctor analyzes</h3><p>The doctor runs the model, reviews the result and writes a recommendation.</p></div>
+    <div class="step"><div class="n">4</div><h3>Get your report</h3><p>See the recommendation and download the PDF report.</p></div>
   </div>
 </section></div>
 
-<section class="section"><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
-  <div class="card role-card"><h2>For patients</h2><ul><li>Instant AI result with confidence</li><li>First-aid and care recommendations</li><li>Personal record history and PDF reports</li><li>Choose which doctor sees your case</li></ul><a class="btn btn-primary" href="{{ url_for('register') }}">Register as patient</a></div>
-  <div class="card role-card"><h2>For doctors</h2><ul><li>See only the cases shared with you</li><li>View the image, AI scores and patient notes</li><li>Record your diagnosis and advice</li><li>Reports update automatically</li></ul><a class="btn btn-outline" href="{{ url_for('register') }}">Register as doctor</a></div>
-</div></section>
-
-<footer class="pfooter">FootGuard AI is an academic project and not a certified medical device. It does not replace professional diagnosis. Always consult a qualified healthcare provider.</footer>
+<footer class="pfooter">{{ APP_NAME }} is an academic project and not a certified medical device. It does not replace professional diagnosis. Always consult a qualified healthcare provider.</footer>
 {% endblock %}

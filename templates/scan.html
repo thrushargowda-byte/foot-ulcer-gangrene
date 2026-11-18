@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% block title %}New Scan | FootGuard AI{% endblock %}
-{% block heading %}New scan{% endblock %}
-{% block subheading %}<p>Upload or capture a clear, well-lit photo of the foot.</p>{% endblock %}
+{% block title %}Send a photo | {{ APP_NAME }}{% endblock %}
+{% block heading %}Send a photo{% endblock %}
+{% block subheading %}<p>Upload a clear, well-lit photo of the foot or wound and choose a doctor.</p>{% endblock %}
 {% block content %}
 <form method="post" enctype="multipart/form-data" class="case-layout" id="scanForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="card">
-    <h2>1. Foot image</h2>
+    <h2>1. Photo</h2>
     <div class="dropzone" id="dz">
       <input type="file" id="file" name="file" accept=".png,.jpg,.jpeg" required>
       <p><b>Click to upload or drag &amp; drop</b></p>
@@ -13,17 +14,20 @@
       <img id="preview" class="preview" alt="Preview">
     </div>
     <button type="button" class="btn btn-outline mt" id="camBtn">Use camera</button>
+    <input type="file" id="camFile" accept="image/*" capture="environment" style="display:none">
   </div>
   <div class="card">
-    <h2>2. Details</h2>
-    <div class="fg"><label>Share with a doctor (optional)</label>
-      <select name="doctor_id"><option value="">Keep private for now</option>
+    <h2>2. Choose a doctor</h2>
+    {% if doctors %}
+    <div class="fg"><label>Doctor</label>
+      <select name="doctor_id" required><option value="">Select a doctor</option>
         {% for d in doctors %}<option value="{{ d.id }}">Dr. {{ d.name }}{% if d.specialization %} ({{ d.specialization }}){% endif %}</option>{% endfor %}
       </select>
-      <small>Only the doctor you choose can see this case. You can also share it later.</small></div>
-    <div class="fg"><label>Note for the doctor (optional)</label>
-      <textarea name="note" rows="4" maxlength="500" placeholder="e.g. Wound present for 2 weeks, I have diabetes"></textarea></div>
-    <button class="btn btn-primary btn-block btn-lg" type="submit" id="goBtn">Analyze image</button>
+      <small>Your photo goes to the admin first. The admin forwards it to this doctor, who analyzes it and sends you the result and recommendation.</small></div>
+    <button class="btn btn-primary btn-block btn-lg" type="submit" id="goBtn">Send to admin</button>
+    {% else %}
+    <div class="empty">No doctors are available yet. Please contact the admin.</div>
+    {% endif %}
     <div class="note">Academic tool, not a certified medical device. It does not replace professional diagnosis.</div>
   </div>
 </form>
@@ -43,10 +47,12 @@ file.addEventListener('change', show);
 ['dragenter', 'dragover'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove('over'); }));
 dz.addEventListener('drop', e => { if (e.dataTransfer.files.length) { file.files = e.dataTransfer.files; show(); } });
-document.getElementById('scanForm').addEventListener('submit', () => { document.getElementById('goBtn').textContent = 'Analyzing... please wait'; });
+document.getElementById('scanForm').addEventListener('submit', () => { const b = document.getElementById('goBtn'); if (b) b.textContent = 'Sending... please wait'; });
+document.getElementById('camFile').addEventListener('change', e => { if (e.target.files[0]) { file.files = e.target.files; show(); } });
 let stream = null; const cam = document.getElementById('cam'), video = document.getElementById('video'), canvas = document.getElementById('canvas');
 function stop() { cam.style.display = 'none'; if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
 document.getElementById('camBtn').onclick = async () => {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { if (/Android|iPhone|iPad/i.test(navigator.userAgent)) { document.getElementById('camFile').click(); } else { alert('The live camera needs a secure address. On this computer open http://127.0.0.1:5000 or start the app with HTTPS=1 and open https://' + location.host); } return; }
   cam.style.display = 'flex';
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); video.srcObject = stream; }
   catch (err) { alert('Could not access camera: ' + err.message); stop(); }

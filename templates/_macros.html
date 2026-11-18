@@ -1,16 +1,21 @@
 {% macro case_table(cases, role) %}
-{% set bc = {'Normal': 'b-normal', 'Foot Ulcer (DFU)': 'b-dfu', 'Gangrene': 'b-gangrene'} %}
+{% set bc = {'Normal': 'b-normal', 'Foot Ulcer (DFU)': 'b-dfu', 'Gangrene': 'b-gangrene', 'Inconclusive': 'b-incon'} %}
 {% if cases %}
 <div style="overflow-x:auto"><table class="table">
-  <thead><tr><th></th>{% if role == 'doctor' %}<th>Patient</th>{% endif %}<th>Result</th><th>Confidence</th><th>Status</th><th>Date</th><th></th></tr></thead>
+  <thead><tr><th></th>{% if role == 'doctor' %}<th>Patient</th>{% else %}<th>Doctor</th>{% endif %}<th>Result</th><th>Status</th><th>Date</th><th></th></tr></thead>
   <tbody>
   {% for c in cases %}
   <tr>
     <td><img class="thumb" src="{{ url_for('case_image', case_id=c.id) }}" alt=""></td>
-    {% if role == 'doctor' %}<td><b>{{ c.patient.name }}</b></td>{% endif %}
-    <td><span class="badge {{ bc[c.prediction] }}">{{ c.prediction }}</span></td>
-    <td>{{ c.confidence }}%</td>
-    <td><span class="badge s-{{ c.status }}">{{ c.status|capitalize }}</span></td>
+    {% if role == 'doctor' %}<td><b>{{ c.display_name }}</b></td>
+    {% else %}<td>{{ ('Dr. ' ~ c.doctor.name) if c.doctor else '-' }}</td>{% endif %}
+    <td>
+      {% if c.analyzed and (role == 'doctor' or c.patient_can_see) %}
+        {% set shown = c.doctor_diagnosis if (c.status == 'reviewed' and c.doctor_diagnosis) else c.prediction %}
+        <span class="badge {{ bc.get(shown, 'b-incon') }}">{{ shown }}</span>
+      {% else %}<span class="muted">{{ 'Not analyzed yet' if role == 'doctor' else 'Waiting for result' }}</span>{% endif %}
+    </td>
+    <td><span class="badge s-{{ c.status }}">{{ c.status|status_label(role) }}</span></td>
     <td class="muted">{{ c.created_at.strftime('%d %b %Y') }}</td>
     <td><a class="btn btn-outline" href="{{ url_for('case_view', case_id=c.id) }}">View</a></td>
   </tr>

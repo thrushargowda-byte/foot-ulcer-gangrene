@@ -1,14 +1,20 @@
 {% extends "base.html" %}
 {% from "_macros.html" import case_table %}
-{% block title %}Records | FootGuard AI{% endblock %}
+{% block title %}Records | {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'My records' if current_user.role == 'patient' else 'Patient cases' }}{% endblock %}
-{% block subheading %}<p>{{ 'Your scans and reports are visible only to you and the doctor you share them with.' if current_user.role == 'patient' else 'Only cases shared with you appear here.' }}</p>{% endblock %}
+{% block subheading %}<p>{{ 'Your photos and reports are visible only to you, the admin and the doctor handling your case.' if current_user.role == 'patient' else 'Only cases forwarded to you by the admin appear here.' }}</p>{% endblock %}
 {% block content %}
 <div class="tabs">
   <a href="{{ url_for('cases') }}" class="{{ 'on' if not status }}">All</a>
-  {% if current_user.role == 'patient' %}<a href="{{ url_for('cases', status='private') }}" class="{{ 'on' if status == 'private' }}">Private</a>{% endif %}
-  <a href="{{ url_for('cases', status='pending') }}" class="{{ 'on' if status == 'pending' }}">{{ 'Pending' if current_user.role == 'patient' else 'Needs review' }}</a>
-  <a href="{{ url_for('cases', status='reviewed') }}" class="{{ 'on' if status == 'reviewed' }}">Reviewed</a>
+  {% if current_user.role == 'patient' %}
+  <a href="{{ url_for('cases', status='submitted') }}" class="{{ 'on' if status == 'submitted' }}">Awaiting admin</a>
+  <a href="{{ url_for('cases', status='pending') }}" class="{{ 'on' if status == 'pending' }}">With doctor</a>
+  <a href="{{ url_for('cases', status='reviewed') }}" class="{{ 'on' if status == 'reviewed' }}">Results received</a>
+  <a href="{{ url_for('cases', status='returned') }}" class="{{ 'on' if status == 'returned' }}">Returned</a>
+  {% else %}
+  <a href="{{ url_for('cases', status='pending') }}" class="{{ 'on' if status == 'pending' }}">Needs review</a>
+  <a href="{{ url_for('cases', status='reviewed') }}" class="{{ 'on' if status == 'reviewed' }}">Sent to patient</a>
+  {% endif %}
 </div>
 <div class="card">{{ case_table(cases, current_user.role) }}</div>
 {% endblock %}

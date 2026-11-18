@@ -1,23 +1,29 @@
 {% extends "base.html" %}
 {% set public_page = true %}{% set auth_page = true %}
-{% block title %}Log in | FootGuard AI{% endblock %}
+{% block title %}{{ role|capitalize }} login | {{ APP_NAME }}{% endblock %}
 {% block public %}
+{% set subs = {'patient': 'Enter your email and password.', 'doctor': 'Doctor accounts are created by the admin.', 'admin': 'Sign in with the admin email and password.'} %}
 <div class="auth-wrap">
   <div class="auth-side">
-    <a class="brand" href="{{ url_for('home') }}">{% include '_logo.html' %}<span>FootGuard AI</span></a>
-    <div><h2>Welcome back</h2><p>Log in to see your records, new scans and doctor feedback.</p>
-      <ul><li>Private, per-user record storage</li><li>Instant AI foot screening</li><li>Doctor review and PDF reports</li></ul></div>
+    <a class="brand" href="{{ url_for('home') }}">{% include '_logo.html' %}<span>{{ APP_NAME }}</span></a>
+    <div><h2>Welcome back</h2><p>Choose your portal and log in.</p>
+      <ul><li>Patient: send a photo and choose a doctor</li><li>Admin: check cases and forward them to doctors</li><li>Doctor: analyze, recommend and send the report</li></ul></div>
     <small>Academic project. Not a certified medical device.</small>
   </div>
   <div class="auth-main"><div class="auth-box">
-    <h1>Log in</h1><p class="sub">Enter your email and password.</p>
+    <div class="roletabs">
+      {% for r in ['patient', 'doctor', 'admin'] %}<a href="{{ url_for('login', role=r) }}" class="{{ 'on' if role == r }}">{{ r|capitalize }}</a>{% endfor %}
+    </div>
+    <h1>{{ role|capitalize }} login</h1><p class="sub">{{ subs[role] }}</p>
     {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
-    <form method="post">
-      <div class="fg"><label>Email</label><input type="email" name="email" required autocomplete="email" autofocus></div>
-      <div class="fg"><label>Password</label><input type="password" name="password" required autocomplete="current-password"></div>
-      <button class="btn btn-primary btn-block btn-lg" type="submit">Log in</button>
+    <form method="post" action="{{ url_for('login', role=role) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="fg"><label>Email</label><input type="email" name="email" required autocomplete="email" value="{{ email or (admin_email if role == 'admin' else '') }}" {{ 'autofocus' if role != 'admin' }}></div>
+      <div class="fg"><label>Password</label><input type="password" name="password" required autocomplete="current-password" {{ 'autofocus' if role == 'admin' }}></div>
+      <button class="btn btn-primary btn-block btn-lg" type="submit">Log in as {{ role }}</button>
     </form>
-    <p class="muted mt">New here? <a href="{{ url_for('register') }}"><b>Create an account</b></a></p>
+    {% if role == 'patient' %}<p class="muted mt">New here? <a href="{{ url_for('register') }}"><b>Create an account</b></a></p>
+    {% elif role == 'doctor' %}<p class="muted mt">No account yet? Ask the admin to create one for you.</p>{% endif %}
   </div></div>
 </div>
 {% endblock %}

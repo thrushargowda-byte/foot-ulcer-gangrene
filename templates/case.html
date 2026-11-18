@@ -1,79 +1,158 @@
 {% extends "base.html" %}
-{% block title %}Case #{{ case.id }} | FootGuard AI{% endblock %}
+{% block title %}Case #{{ case.id }} | {{ APP_NAME }}{% endblock %}
 {% block heading %}Case #{{ case.id }}{% endblock %}
-{% block subheading %}<p>{{ case.created_at.strftime('%d %b %Y, %H:%M') }}{% if current_user.role == 'doctor' %} &nbsp;|&nbsp; Patient: <b>{{ case.patient.name }}</b>{% endif %}</p>{% endblock %}
+{% block subheading %}<p>{{ case.created_at.strftime('%d %b %Y, %H:%M') }}{% if current_user.role == 'doctor' %} &nbsp;|&nbsp; Patient: <b>{{ case.display_name }}</b>{% elif case.doctor %} &nbsp;|&nbsp; Doctor: <b>Dr. {{ case.doctor.name }}</b>{% endif %}</p>{% endblock %}
 {% block content %}
-{% set bc = {'Normal': 'b-normal', 'Foot Ulcer (DFU)': 'b-dfu', 'Gangrene': 'b-gangrene'} %}
+{% set bc = {'Normal': 'b-normal', 'Foot Ulcer (DFU)': 'b-dfu', 'Gangrene': 'b-gangrene', 'Inconclusive': 'b-incon'} %}
+{% set is_doctor = current_user.role == 'doctor' %}
 <p style="margin-bottom:14px"><a href="{{ url_for('cases') }}">&larr; Back to records</a></p>
 <div class="case-layout">
+  <!-- ============ LEFT: image + result ============ -->
   <div>
     <div class="card">
-      <img class="case-img" src="{{ url_for('case_image', case_id=case.id) }}" alt="Foot image">
+      <img class="case-img" src="{{ url_for('case_image', case_id=case.id) }}" alt="Submitted photo">
       <div class="result-head">
-        <span class="badge badge-lg {{ bc[case.prediction] }}">{{ case.prediction }}</span>
-        <span class="muted">AI confidence <b style="color:var(--text)">{{ case.confidence }}%</b></span>
-        <span class="badge s-{{ case.status }}">{{ case.status|capitalize }}</span>
+        {% if show_result %}
+        <span class="badge badge-lg {{ bc.get(case.prediction, 'b-incon') }}">{{ case.prediction }}</span>
+        <span class="muted">Model confidence <b style="color:var(--text)">{{ case.confidence }}%</b></span>
+        {% endif %}
+        <span class="badge s-{{ case.status }}">{{ case.status|status_label(current_user.role) }}</span>
       </div>
-      {% for n, v in case.bars %}
-      <div class="bar-row"><span class="l">{{ n }}</span><div class="bar"><i style="width:{{ v }}%"></i></div><span class="v">{{ v }}%</span></div>
-      {% endfor %}
-      {% if case.patient_note %}<div class="note"><b>Patient note:</b> {{ case.patient_note }}</div>{% endif %}
-      {% if case.severity %}
-      <div class="note"><b>Estimated severity (experimental): {{ case.severity }}</b>
-        {% if case.severity_hint %}<br>{{ case.severity_hint }}{% endif %}
-        <br>Basic colour analysis only, not a validated clinical staging tool.</div>
+
+      {% if show_result %}
+        {% for n, v in case.bars %}
+        <div class="bar-row"><span class="l">{{ n }}</span><div class="bar"><i style="width:{{ v }}%"></i></div><span class="v">{{ v }}%</span></div>
+        {% endfor %}
+        {% if case.severity %}
+        <div class="note"><b>Estimated severity (experimental): {{ case.severity }}</b>
+          {% if case.severity_hint %}<br>{{ case.severity_hint }}{% endif %}
+          <br>Basic colour analysis only, not a validated clinical staging tool.</div>
+        {% endif %}
+      {% elif is_doctor %}
+        <div class="note">This photo has not been analyzed yet. Use <b>Run analysis</b> on the right.</div>
       {% endif %}
+
+      {% if case.p_name %}<div class="note"><b>Patient details:</b> {{ case.p_name }}{% if case.p_age %} &middot; {{ case.p_age }} yrs{% endif %}{% if case.p_gender %} &middot; {{ case.p_gender }}{% endif %}{% if case.p_diabetic %} &middot; Diabetic: {{ case.p_diabetic }}{% endif %}{% if case.p_contact %} &middot; {{ case.p_contact }}{% endif %}</div>{% endif %}
+      {% if case.patient_note %}<div class="note"><b>Patient note:</b> {{ case.patient_note }}</div>{% endif %}
+      {% if is_doctor and case.admin_note %}<div class="note"><b>Admin note:</b> {{ case.admin_note }}</div>{% endif %}
+
       <div class="row mt">
-        <a class="btn btn-primary" href="{{ url_for('case_report', case_id=case.id) }}">Download PDF report</a>
+        {% if show_result %}<a class="btn btn-primary" href="{{ url_for('case_report', case_id=case.id) }}">Download PDF report</a>{% endif %}
         {% if current_user.role == 'patient' %}
-        <form method="post" action="{{ url_for('delete_case', case_id=case.id) }}" onsubmit="return confirm('Delete this record permanently?')"><button class="btn btn-danger" type="submit">Delete</button></form>
+        <form method="post" action="{{ url_for('delete_case', case_id=case.id) }}" onsubmit="return confirm('Delete this record permanently?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger" type="submit">Delete</button></form>
         {% endif %}
       </div>
     </div>
   </div>
 
+  <!-- ============ RIGHT ============ -->
   <div>
+  {% if is_doctor %}
+    {# ---------- doctor ---------- #}
+    {% if case.status == 'pending' and not case.analyzed %}
     <div class="card" style="margin-bottom:20px">
-      <h2>Doctor review</h2>
-      {% if current_user.role == 'doctor' %}
-        <form method="post" action="{{ url_for('review', case_id=case.id) }}">
-          <div class="fg"><label>Your diagnosis</label>
-            <select name="diagnosis">{% for d in diagnoses %}<option value="{{ d }}" {{ 'selected' if (case.doctor_diagnosis or case.prediction) == d }}>{{ d }}</option>{% endfor %}</select></div>
-          <div class="fg"><label>Notes and advice for the patient</label><textarea name="note" rows="5" maxlength="2000" placeholder="Findings, treatment advice, follow-up...">{{ case.doctor_note or '' }}</textarea></div>
-          <button class="btn btn-primary btn-block" type="submit">{{ 'Update review' if case.reviewed_at else 'Save review' }}</button>
-        </form>
-      {% else %}
-        {% if case.reviewed_at %}
-          <div class="review-box"><b>Dr. {{ case.doctor.name }}</b>{% if case.doctor.specialization %} <span class="muted">({{ case.doctor.specialization }})</span>{% endif %}
-            <p style="margin-top:8px"><b>Diagnosis:</b> {{ case.doctor_diagnosis }}</p>
-            <p style="margin-top:6px;white-space:pre-line">{{ case.doctor_note }}</p>
-            <p class="muted" style="margin-top:8px;font-size:12.5px">Reviewed on {{ case.reviewed_at.strftime('%d %b %Y, %H:%M') }}. Your PDF report includes this review.</p></div>
-        {% elif case.doctor %}
-          <p class="muted">Waiting for <b>Dr. {{ case.doctor.name }}</b> to review this case.</p>
-        {% else %}
-          <p class="muted">This case is private. Share it with a doctor to get a professional review.</p>
-        {% endif %}
-        {% if doctors %}
-        <form method="post" action="{{ url_for('share', case_id=case.id) }}" class="mt">
-          <div class="fg"><label>{{ 'Share with another doctor' if case.doctor else 'Share with a doctor' }}</label>
-            <select name="doctor_id">{% for d in doctors %}<option value="{{ d.id }}" {{ 'selected' if case.doctor_id == d.id }}>Dr. {{ d.name }}{% if d.specialization %} ({{ d.specialization }}){% endif %}</option>{% endfor %}</select></div>
-          <button class="btn btn-outline" type="submit">Share case</button>
-        </form>
-        {% else %}<p class="muted mt">No doctors are registered yet.</p>{% endif %}
-      {% endif %}
+      <h2>Step 1. Analyze the photo</h2>
+      <p class="muted">Run the detection model on this photo. The result stays hidden from the patient until you send it.</p>
+      <form method="post" action="{{ url_for('analyze', case_id=case.id) }}" class="mt" onsubmit="this.querySelector('button').textContent='Analyzing... please wait'">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Run analysis</button>
+      </form>
     </div>
+    {% endif %}
 
+    {% if case.analyzed %}
+    <div class="card" style="margin-bottom:20px">
+      <h2>{{ 'Update recommendation' if case.status == 'reviewed' else 'Step 2. Your recommendation' }}</h2>
+      {% if case.p_gangrene is not none and case.p_gangrene >= 10 and case.prediction != 'Gangrene' %}
+      <div class="flash error">Check carefully: the model gave Gangrene {{ case.p_gangrene }}% even though it chose {{ case.prediction }}. The model can miss gangrene, so judge the photo yourself.</div>
+      {% endif %}
+      <div class="note" style="margin-top:0;margin-bottom:14px">The model result is only a suggestion. Please choose your own diagnosis.</div>
+      <form method="post" action="{{ url_for('review', case_id=case.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="fg"><label>Your diagnosis</label>
+          <select name="diagnosis" required><option value="">Select your diagnosis</option>{% for d in diagnoses %}<option value="{{ d }}" {{ 'selected' if case.doctor_diagnosis == d }}>{{ d }}</option>{% endfor %}</select></div>
+        <div class="fg"><label>Recommendation for the patient</label><textarea name="note" rows="6" maxlength="2000" placeholder="Findings, treatment advice, follow-up...">{{ case.doctor_note or '' }}</textarea></div>
+        {% if case.status == 'reviewed' %}
+        <button class="btn btn-primary btn-block" type="submit" name="action" value="send">Update and resend to patient</button>
+        <p class="muted mt" style="font-size:12.5px">Sent on {{ case.reviewed_at.strftime('%d %b %Y, %H:%M') }}. The patient can already see this result.</p>
+        {% else %}
+        <div class="row">
+          <button class="btn btn-primary" type="submit" name="action" value="send">Send to patient</button>
+          <button class="btn btn-outline" type="submit" name="action" value="draft">Save draft</button>
+        </div>
+        <p class="muted mt" style="font-size:12.5px">The patient sees the result, your recommendation and the PDF report only after you press Send.</p>
+        {% endif %}
+      </form>
+    </div>
+    {% endif %}
+
+    {% if case.status == 'pending' %}
+    <div class="card">
+      <h2>Cannot handle this case?</h2>
+      <form method="post" action="{{ url_for('back_to_admin', case_id=case.id) }}" onsubmit="return confirm('Return this case to the admin?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="fg"><label>Reason (for example: photo is unclear)</label><input name="reason" maxlength="300"></div>
+        <button class="btn btn-outline" type="submit">Return to admin</button>
+      </form>
+    </div>
+    {% endif %}
+
+  {% else %}
+    {# ---------- patient ---------- #}
+    {% set stage = {'submitted': 1, 'pending': 2, 'reviewed': 4}.get(case.status, 0) %}
+    {% if case.status in ('submitted', 'pending', 'reviewed') %}
+    <div class="card" style="margin-bottom:20px">
+      <h2>Progress</h2>
+      <ol class="track">
+        {% for label in ['Photo sent', 'Admin check', 'Doctor analysis', 'Result sent'] %}
+        <li class="{{ 'done' if loop.index0 < stage else ('now' if loop.index0 == stage else '') }}">{{ label }}</li>
+        {% endfor %}
+      </ol>
+      {% if case.status == 'submitted' %}<p class="muted mt">The admin is checking your photo. It will be forwarded to <b>Dr. {{ case.doctor.name if case.doctor else 'your doctor' }}</b>.</p>{% endif %}
+      {% if case.status == 'pending' %}<p class="muted mt"><b>Dr. {{ case.doctor.name if case.doctor else 'Your doctor' }}</b> is analyzing your photo. You will see the result and recommendation here once it is sent.</p>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if case.status == 'reviewed' and case.reviewed_at %}
+    <div class="card" style="margin-bottom:20px">
+      <h2>Doctor's recommendation</h2>
+      <div class="review-box"><b>Dr. {{ case.doctor.name }}</b>{% if case.doctor.specialization %} <span class="muted">({{ case.doctor.specialization }})</span>{% endif %}
+        <p style="margin-top:8px"><b>Diagnosis:</b> {{ case.doctor_diagnosis }}</p>
+        <p style="margin-top:6px;white-space:pre-line">{{ case.doctor_note }}</p>
+        <p class="muted" style="margin-top:8px;font-size:12.5px">Sent on {{ case.reviewed_at.strftime('%d %b %Y, %H:%M') }}. Your PDF report includes this recommendation.</p></div>
+    </div>
+    {% endif %}
+
+    {% if can_resubmit %}
+    <div class="card" style="margin-bottom:20px">
+      <h2>{{ 'Returned to you' if case.status == 'returned' else 'Send this photo to a doctor' }}</h2>
+      {% if case.admin_note %}<div class="review-box"><b>Message from the team</b><p style="margin-top:6px;white-space:pre-line">{{ case.admin_note }}</p></div>{% endif %}
+      {% if doctors %}
+      <form method="post" action="{{ url_for('resubmit', case_id=case.id) }}" class="mt">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="fg"><label>Choose a doctor</label>
+          <select name="doctor_id" required>{% for d in doctors %}<option value="{{ d.id }}">Dr. {{ d.name }}{% if d.specialization %} ({{ d.specialization }}){% endif %}</option>{% endfor %}</select></div>
+        <button class="btn btn-primary" type="submit">Send to admin again</button>
+      </form>
+      {% else %}<p class="muted mt">No doctors are available right now.</p>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if rec %}
     <div class="rec rec-{{ rec.urgency }}">
       {% if rec.urgency == 'high' %}<div class="emergency">Seek emergency medical care immediately</div>{% endif %}
       <h3>{{ rec.urgency_label }}</h3><p>{{ rec.summary }}</p>
       <ul>{% for s in rec.steps %}<li>{{ s }}</li>{% endfor %}</ul>
     </div>
+    {% endif %}
 
     {% if ref %}
-    <div class="card"><h2>{{ ref.title }}</h2>
+    <div class="card" style="margin-top:20px"><h2>{{ ref.title }}</h2>
       {% for k, d in ref.rows %}<div class="ref-row"><b>{{ k }}</b><span>{{ d }}</span></div>{% endfor %}
       <div class="note">General medical reference. It is not derived from your image.</div></div>
     {% endif %}
+  {% endif %}
   </div>
 </div>
 {% endblock %}

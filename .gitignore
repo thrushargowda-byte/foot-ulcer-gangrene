@@ -9,3 +9,8 @@ static/uploads/*
 storage/
 instance/
 app_old.py
+
+cert.pem
+key.pem
+
+dataset/

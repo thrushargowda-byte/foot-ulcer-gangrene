@@ -382,7 +382,7 @@
     <!-- CARE RECOMMENDATION -->
     <div class="rec-card rec-{{ recommendation.urgency }}">
       {% if recommendation.urgency == "high" %}
-      <div class="emergency-banner">⚠ Seek emergency medical care immediately</div>
+      {% if current_user.role != "doctor" %}<div class="emergency-banner">⚠ Seek emergency medical care immediately</div>{% endif %}
       {% endif %}
 
       <div class="rec-header">

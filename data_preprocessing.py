@@ -1,72 +1,65 @@
 import os
+import hashlib
 import cv2
 import numpy as np
-from sklearn.model_selection import train_test_split
 
-# ---- CONFIG ----
-DATASET_DIR = r"C:\Users\thrus\OneDrive\Desktop\Dataset"
+BASE = os.path.dirname(os.path.abspath(__file__))
+DATASET_DIR = os.path.join(BASE, "dataset")
 IMG_SIZE = 224
-CLASSES = {
-    "normal": 0,
-    os.path.join("DFU", "Original Images"): 1,
-    "gangrene": 2
-}
+CLASSES = {"normal": 0, os.path.join("DFU", "Original Images"): 1, "gangrene": 2}
+
 
 def load_data():
-    images = []
-    labels = []
-
+    images, labels, groups, ids = [], [], [], {}
     for class_name, label in CLASSES.items():
-        class_folder = os.path.join(DATASET_DIR, class_name)
-        if not os.path.exists(class_folder):
-            print(f"WARNING: folder not found -> {class_folder}")
+        folder = os.path.join(DATASET_DIR, class_name)
+        if not os.path.exists(folder):
+            print("WARNING: folder not found ->", folder)
             continue
-
-        files = os.listdir(class_folder)
-        print(f"Loading {len(files)} images from '{class_name}'...")
-
-        for filename in files:
-            filepath = os.path.join(class_folder, filename)
-            img = cv2.imread(filepath)
-
+        files = sorted(os.listdir(folder))
+        print(f"Loading {len(files)} files from '{class_name}'...")
+        for name in files:
+            path = os.path.join(folder, name)
+            img = cv2.imread(path)
             if img is None:
-                print(f"  Skipping unreadable file: {filename}")
+                print("  Skipping unreadable file:", name)
                 continue
-
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+            img = cv2.resize(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), (IMG_SIZE, IMG_SIZE))
             images.append(img)
             labels.append(label)
+            with open(path, "rb") as f:
+                groups.append(ids.setdefault(hashlib.md5(f.read()).hexdigest(), len(ids)))
+    return np.array(images, dtype="float32"), np.array(labels), np.array(groups)
 
-    images = np.array(images, dtype="float32")  # raw 0-255, preprocess_input applied at training time
-    labels = np.array(labels)
 
-    return images, labels
+def grouped_split(y, groups, seed=42):
+    """70/15/15 per class; identical images always land in the same split."""
+    rng = np.random.RandomState(seed)
+    split = np.zeros(len(y), dtype=int)  # 0 train, 1 val, 2 test
+    for c in np.unique(y):
+        members = np.where(y == c)[0]
+        gs = np.unique(groups[members])
+        rng.shuffle(gs)
+        n = round(0.15 * len(members))
+        got = [0, 0]
+        for g in gs:
+            idx = members[groups[members] == g]
+            if got[0] < n:
+                split[idx] = 2; got[0] += len(idx)
+            elif got[1] < n:
+                split[idx] = 1; got[1] += len(idx)
+    return split
 
 
 if __name__ == "__main__":
-    X, y = load_data()
+    X, y, g = load_data()
     print(f"\nTotal images loaded: {len(X)}")
-    print(f"Image shape: {X.shape}")
-    print(f"Label distribution: {np.bincount(y)}")
-
-    X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y
-    )
-    X_val, X_test, y_val, y_test = train_test_split(
-        X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp
-    )
-
-    print(f"\nTrain: {X_train.shape[0]} images")
-    print(f"Val:   {X_val.shape[0]} images")
-    print(f"Test:  {X_test.shape[0]} images")
-
-    os.makedirs("data", exist_ok=True)
-    np.save("data/X_train.npy", X_train)
-    np.save("data/y_train.npy", y_train)
-    np.save("data/X_val.npy", X_val)
-    np.save("data/y_val.npy", y_val)
-    np.save("data/X_test.npy", X_test)
-    np.save("data/y_test.npy", y_test)
-
+    print("Label distribution:", np.bincount(y))
+    split = grouped_split(y, g)
+    os.makedirs(os.path.join(BASE, "data"), exist_ok=True)
+    for name, k in (("train", 0), ("val", 1), ("test", 2)):
+        np.save(os.path.join(BASE, "data", f"X_{name}.npy"), X[split == k])
+        np.save(os.path.join(BASE, "data", f"y_{name}.npy"), y[split == k])
+        print(f"{name}: {(split == k).sum()} images, per class {np.bincount(y[split == k], minlength=3)}")
+    print("Duplicate groups shared between train and test:", len(set(g[split == 0]) & set(g[split == 2])))
     print("\nPreprocessing complete. Saved to data/ folder.")
