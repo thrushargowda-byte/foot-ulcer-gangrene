@@ -20,7 +20,9 @@
         <option value="">Select</option><option>Yes</option><option>No</option><option>Not sure</option>
       </select></div>
     <div class="fg"><label>Contact number</label>
-      <input type="tel" name="p_contact" maxlength="30" required></div>
+      <input type="text" inputmode="tel" name="p_contact" maxlength="30" required></div>
+    <div class="fg"><label>Patient email (the report PDF will be sent here)</label>
+      <input type="text" inputmode="email" name="p_email" maxlength="120" placeholder="name@example.com" required></div>
     <div class="fg"><label>Clinical notes (optional)</label>
       <textarea name="patient_note" rows="3" maxlength="1000"></textarea></div>
   </div>

@@ -701,6 +701,73 @@ def scan():
         return redirect(url_for("case_view", case_id=case.id))
     return render_template("scan.html", doctors=doctors)
 
+# ------------------------------------------------------------------ EMAIL THE REPORT TO THE PATIENT
+def email_report(c):
+    """Email the case's PDF report to the patient. Returns (ok, message for the doctor)."""
+    import smtplib, ssl
+    from email.message import EmailMessage
+    patient = db.session.get(User, c.patient_id)
+    to = (patient.email if patient else "") or ""
+    if not to or to.endswith("@walkin.local"):
+        return False, "No patient email on file, so the report was not emailed."
+    user, pw = os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASS")
+    if not (user and pw):
+        return False, "Email is not set up (SMTP_USER / SMTP_PASS missing), so the report was not emailed."
+    path = os.path.join(PDF_DIR, f"patient_{c.patient_id}", c.report_file or "")
+    if not c.report_file or not os.path.isfile(path):
+        return False, "The report PDF could not be found, so it was not emailed."
+    msg = EmailMessage()
+    msg["Subject"] = "Your foot scan report - Foot Ulcer and Gangrene Detection"
+    msg["From"] = user
+    msg["To"] = to
+    msg.set_content(
+        f"Hello {c.p_name or patient.name},\n\n"
+        f"Dr. {current_user.name} has reviewed your foot scan. Your report is attached as a PDF.\n\n"
+        "This is an academic tool and not a certified medical device. It does not replace "
+        "professional diagnosis. Please follow your doctor's advice.\n")
+    with open(path, "rb") as fh:
+        msg.add_attachment(fh.read(), maintype="application", subtype="pdf",
+                           filename=f"Foot_Ulcer_Gangrene_case_{c.id}.pdf")
+    try:
+        with smtplib.SMTP(os.environ.get("SMTP_HOST", "smtp.gmail.com"),
+                          int(os.environ.get("SMTP_PORT", "587")), timeout=20) as s:
+            s.starttls(context=ssl.create_default_context())
+            s.login(user, pw)
+            s.send_message(msg)
+    except Exception as e:
+        app.logger.exception("Report email failed")
+        return False, f"The report could not be emailed ({type(e).__name__}). You can still download it from the case page."
+    return True, f"Report emailed to {to}."
+
+def email_login(to, name, temp_pw):
+    """Email a new patient their login details. Returns a short message for the doctor."""
+    import smtplib, ssl
+    from email.message import EmailMessage
+    user, pw = os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASS")
+    if not (user and pw):
+        return "Email is not set up, so please share these login details with the patient yourself."
+    msg = EmailMessage()
+    msg["Subject"] = "Your login - Foot Ulcer and Gangrene Detection"
+    msg["From"] = user
+    msg["To"] = to
+    msg.set_content(
+        f"Hello {name},\n\n"
+        f"Dr. {current_user.name} has created an account for you.\n\n"
+        f"Log in: {request.host_url}login?role=patient\n"
+        f"Email: {to}\n"
+        f"Temporary password: {temp_pw}\n\n"
+        "Your result will appear under My Records once your doctor has sent it.\n")
+    try:
+        with smtplib.SMTP(os.environ.get("SMTP_HOST", "smtp.gmail.com"),
+                          int(os.environ.get("SMTP_PORT", "587")), timeout=20) as srv:
+            srv.starttls(context=ssl.create_default_context())
+            srv.login(user, pw)
+            srv.send_message(msg)
+    except Exception:
+        app.logger.exception("Login email failed")
+        return "The login details could not be emailed, so please share them with the patient yourself."
+    return f"Login details emailed to {to}."
+
 # ------------------------------------------------------------------ DOCTOR: NEW PATIENT SCAN
 @app.route("/doctor/new-scan", methods=["GET", "POST"])
 @role_required("doctor")
@@ -717,18 +784,30 @@ def doctor_new_scan():
         p_diabetic = request.form.get("p_diabetic", "").strip()[:10]
         p_contact = request.form.get("p_contact", "").strip()[:30]
         note = request.form.get("patient_note", "").strip()[:1000]
+        import re
+        p_email = request.form.get("p_email", "").strip().lower()[:120]
         if not (p_name and p_age and p_gender and p_diabetic and p_contact):
             flash("Please fill in all the patient details.", "error")
             return redirect(url_for("doctor_new_scan"))
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", p_email):
+            flash("Please enter a valid patient email address.", "error")
+            return redirect(url_for("doctor_new_scan"))
 
         from werkzeug.security import generate_password_hash
-        # walk-in patient record (inactive, cannot log in) so the case has a patient_id
-        patient = User(name=p_name, email=f"walkin-{uuid.uuid4().hex[:12]}@walkin.local",
-                       password_hash=generate_password_hash(uuid.uuid4().hex),
-                       role="patient", active=False, age=p_age, gender=p_gender,
-                       diabetic=p_diabetic, contact=p_contact)
-        db.session.add(patient)
-        db.session.flush()
+        patient = User.query.filter_by(email=p_email).first()
+        if patient and patient.role != "patient":
+            flash("That email belongs to a doctor or admin account. Please use the patient's own email.", "error")
+            return redirect(url_for("doctor_new_scan"))
+        new_login = None
+        if not patient:
+            import secrets
+            new_login = secrets.token_hex(4)   # temporary password, 8 characters
+            patient = User(name=p_name, email=p_email,
+                           password_hash=generate_password_hash(new_login),
+                           role="patient", active=True, age=p_age, gender=p_gender,
+                           diabetic=p_diabetic, contact=p_contact)
+            db.session.add(patient)
+            db.session.flush()
 
         folder = os.path.join(IMG_DIR, f"patient_{patient.id}")
         os.makedirs(folder, exist_ok=True)
@@ -748,6 +827,9 @@ def doctor_new_scan():
         db.session.add(case)
         db.session.commit()
         flash("Patient case created. Run the analysis below.", "success")
+        if new_login:
+            info = email_login(p_email, p_name, new_login)
+            flash(f"Patient login created. Email: {p_email}   Temporary password: {new_login}. {info}", "success")
         return redirect(url_for("case_view", case_id=case.id))
     return render_template("doctor_scan.html")
 
@@ -842,6 +924,9 @@ def review(case_id):
         msg = "Draft saved. The patient cannot see it until you send it."
     db.session.commit(); make_report(c)
     flash(msg, "success")
+    if c.status == "reviewed":
+        ok, info = email_report(c)
+        flash(info, "success" if ok else "error")
     return redirect(url_for("case_view", case_id=c.id))
 
 
