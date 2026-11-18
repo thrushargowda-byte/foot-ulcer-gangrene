@@ -23,6 +23,7 @@
       <button class="btn btn-primary btn-block btn-lg" type="submit">Log in as {{ role }}</button>
     </form>
     {% if role == 'patient' %}<p class="muted mt">New here? <a href="{{ url_for('register') }}"><b>Create an account</b></a></p>
+{% if request.args.get('role', 'patient') == 'patient' %}<p style="margin-top:14px;padding:12px 14px;border:1px dashed #94a3b8;border-radius:10px">Your doctor added you? <a href="{{ url_for('activate') }}"><b>Activate with your Patient ID</b></a> to set your password.</p>{% endif %}
     {% elif role == 'doctor' %}<p class="muted mt">No account yet? Ask the admin to create one for you.</p>{% endif %}
   </div></div>
 </div>
